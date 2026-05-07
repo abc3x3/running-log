@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 
+  <base target="_top">
+  
+  <link rel="apple-touch-icon" href="https://i.meee.com.tw/T4oxjn6.png">
+  
+  <link rel="icon" sizes="192x192" href="https://i.meee.com.tw/T4oxjn6.png">
+ 
+  <title> 跑步紀錄 </title>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+<style>
+  * {box-sizing: border-box; /* 確保 padding 不會撐開寬度 */}
+html, body {
+  width: 100%;
+  overflow-x: hidden; /* 強制禁止水平滑動 */
+  position: relative;
+}
+  :root { --primary-color: #20c997; --accent-color: #ff6b6b; --bg-color: #f0f2f5; }
+  body { background-color: var(--bg-color); font-family: sans-serif; margin: 0; padding-bottom: 100px; }
+ 
+  /* 頂端與分頁動畫 */
+  .top-header { background: linear-gradient(135deg, var(--primary-color), #00b894); color: white; padding: 20px; text-align: center; border-radius: 0 0 25px 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+  .top-header h5 { margin: 0; font-weight: 800; }
+  .page-content { display: none; padding: 10px 0; animation: slideUp 0.3s ease-out; }
+  .page-content.active { display: block; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* 月曆裝飾與樣式 */
+  .notebook-container { background: white; margin: 15px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; position: relative; }
+  #calendar { padding: 10px; border: none !important; }
+  .fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid { border: none !important; }
+  .fc-daygrid-day-frame { min-height: 75px !important; display: flex !important; align-items: center; justify-content: center; position: relative; }
+  .fc-daygrid-day-top { position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%); z-index: 10; }
+  .fc-daygrid-day-number { font-family: 'Arial Black', sans-serif; font-size: 1.4rem; font-weight: 900; color: #333; text-decoration: none !important; }
+  .fc-day-sun .fc-daygrid-day-number { color: #ff6b6b !important; }
+  .fc-day-sat .fc-daygrid-day-number { color: #3498db !important; }
+  .fc-day-today { background-color: transparent !important; }
+  .fc-day-today .fc-daygrid-day-number { border-bottom: 3px solid #333 !important; }
+  .fc-daygrid-event-harness { display: none !important; }
+  .preview-img { width: 100%; max-height: 150px; object-fit: contain; border-radius: 8px; margin-top: 10px; display: none; background: #f8f9fa; border: 1px solid #ddd; }
+.history-photo {
+  width: 70px; /* 固定寬度 */
+  height: 70px;
+  object-fit: cover; /* 保持比例裁切 */
+  border-radius: 10px;
+  margin-top: 5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  flex-shrink: 0; /* 防止圖片被壓縮 */
+}
+  /* 移除星期標題的藍色與底線 */
+.fc-col-header-cell-cushion {
+  color: #444 !important; /* 深灰色 */
+  text-decoration: none !important; /* 移除底線 */
+  font-weight: 600;
+}
+  
+/* 月曆圖例樣式 */
+.calendar-legend {
+  display: flex;
+  justify-content: space-around;
+  padding: 15px 10px;
+  background: #fdfdfd;
+  border-top: 1px solid #eee;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  opacity: 0.6; /* 與月曆圓圈透明度一致 */
+}
+
+/* 延用原本定義的背景顏色 */
+.dot-run { background-color: #2ecc71; }
+.dot-rest { background-color: #f1c40f; }
+.dot-leave { background-color: #3498db; }
+
+  /* 圓圈背景 */
+  .circle-bg { position: absolute; width: 48px; height: 48px; border-radius: 50%; z-index: 1; opacity: 0.5; pointer-events: none; }
+  .bg-run { background-color: #2ecc71 !important; }
+  .bg-rest { background-color: #f1c40f !important; }
+  .bg-leave { background-color: #3498db !important; }
+
+  /* 歷史紀錄卡片 */
+  .history-card {
+  background: white;
+  border-radius: 15px;
+  padding: 12px 15px;
+  margin: 10px 15px;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  display: flex; /* 使用 flex 讓文字與照片可以並排 */
+  justify-content: space-between;
+  align-items: flex-start;
+  border-left: 6px solid #ddd;
+}
+
+/* 頂部標題旁的剩餘里程標籤 */
+/* 頂部標題旁的剩餘里程標籤 - 強化版 */
+.header-badge {
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
+  padding: 5px 14px !important;
+  border-radius: 50px !important;
+  margin-left: 10px !important;
+  display: inline-block !important;
+  color: white !important; /* 強制文字為白色 */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+  z-index: 1005 !important;
+  line-height: 1.2 !important;
+}
+
+/* 狀態一：還差幾公里的樣式 (亮橘色) */
+.badge-warning {
+  background-color: #ff9f43 !important; /* 明亮的橘黃色 */
+  color: white !important;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+/* 狀態二：已達標的樣式 (亮白色) */
+.badge-success {
+  background-color: #ffffff !important; 
+  color: #20c997 !important; /* 字體變主題綠 */
+  border: 2px solid #ffffff;
+}
+
+/* 全螢幕週報彈窗的特殊樣式 */
+#weeklyModal .modal-content {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: none;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+#weeklyModal .modal-header { background: var(--primary-color); color: white; border-radius: 20px 20px 0 0; }
+#weeklyModal .report-body { font-size: 1.2rem; line-height: 1.8; padding: 30px; text-align: center; }
+
+/* 不同類型的邊條顏色 */
+.history-card.border-success { border-left-color: #2ecc71 !important; } /* 跑步-綠色 */
+.history-card.border-warning { border-left-color: #f1c40f !important; } /* 休息-黃色 */
+.history-card.border-primary { border-left-color: #3498db !important; } /* 請假-藍色 */
+
+.history-info {
+  flex: 1;
+  padding-right: 10px;
+  /* 解決第三點：備註字太多自動換行 */
+  word-break: break-all; 
+  overflow-wrap: anywhere;
+}
+
+  .history-delete {
+  font-size: 0.9rem;
+  color: #ff6b6b;
+  cursor: pointer;
+  margin-left: 8px;
+}
+  .history-stats { font-weight: bold; font-size: 1.1rem; }
+  .history-stats small { font-weight: normal; font-size: 0.8rem; color: #666; }
+
+  /* 表情按鈕優化 */
+  .feeling-group { display: flex; justify-content: space-between; gap: 5px; }
+  .feeling-btn { flex: 1; text-align: center; border: 1px solid #ddd; border-radius: 12px; padding: 10px 5px; cursor: pointer; transition: 0.3s; }
+  .feeling-btn input { display: none; }
+  .feeling-btn span { display: block; font-size: 1.4rem; }
+  .feeling-btn small { display: block; font-size: 0.65rem; color: #777; }
+  .feeling-btn:hover { background: #f8f9fa; }
+  .feeling-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+  .feeling-btn.active small { color: white; }
+
+  /* 懸浮導航欄 */
+  .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; height: 70px; background: white; border-radius: 35px; display: flex; justify-content: space-evenly; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 2000; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; color: #b2bec3; cursor: pointer; border: none; background: none; }
+  .nav-item i { font-size: 1.2rem; margin-bottom: 4px; }
+  .nav-item span { font-size: 0.7rem; font-weight: bold; }
+  .nav-item.active { color: var(--primary-color); }
+  #overtrainAlert {
+  background: var(--accent-color);
+  color: white;
+  margin: 10px 15px;
+  padding: 12px;
+  border-radius: 15px;
+  font-weight: bold;
+  display: none; /* 預設隱藏 */
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(255,107,107,0.3);
+  animation: pulse 2s infinite;
+}
+
+#imagePreview {
+  width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  margin-top: 10px;
+  display: none;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+/* 月份摺疊標題樣式 */
+.month-group {
+  margin: 15px;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.month-header {
+  background: #f8f9fa;
+  padding: 12px 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  color: #333;
+  border-bottom: 1px solid #eee;
+}
+
+.month-header:hover { background: #f1f2f6; }
+
+/* 箭頭旋轉動畫 */
+.month-header i { transition: transform 0.3s; }
+.month-header[aria-expanded="true"] i { transform: rotate(180deg); }
+
+/* 卡片點擊時的效果 */
+.card[onclick]:active {
+  background-color: #f8f9fa !important;
+  transform: scale(0.98);
+  transition: transform 0.1s;
+}
+
+/* 讓彈窗及其背景蓋過導航欄 (nav 是 2000) */
+.modal { z-index: 3000 !important; }
+.modal-backdrop { z-index: 2950 !important; }
+
+/* 增加彈窗內部的底部留白，避免在某些手機上按鈕太貼邊緣 */
+.modal-body {
+  padding-bottom: 30px !important;
+}
+
+#userInbox {
+  max-height: 200px; /* 訊息太多時可以捲動，不撐破版面 */
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+</style>
+</head>
+<body>
+
+<!-- 登入與註冊頁面 -->
+<div id="loginPage" class="container mt-5" style="max-width: 400px;">
+  <div class="card shadow p-4" style="border-radius: 20px;">
+    <h4 class="text-center mb-4">🏃 跑團系統 2.0</h4>
+    <div id="loginBox">
+      <input type="email" id="lEmail" class="form-control mb-2" placeholder="Email">
+      <input type="password" id="lPw" class="form-control mb-3" placeholder="密碼">
+      <button class="btn btn-primary w-100" id="loginBtn" onclick="handleLogin()">登入</button>
+      <p class="text-center mt-3 small" onclick="toggleMode(true)" style="color:blue;cursor:pointer">註冊新帳號</p>
+    </div>
+    <div id="regBox" style="display:none">
+      <input type="text" id="rName" class="form-control mb-2" placeholder="暱稱">
+      <input type="email" id="rEmail" class="form-control mb-2" placeholder="Email">
+      <input type="password" id="rPw" class="form-control mb-3" placeholder="密碼">
+      <button class="btn btn-success w-100" id="regBtn" onclick="handleReg()">註冊</button>
+      <p class="text-center mt-3 small" onclick="toggleMode(false)" style="color:blue;cursor:pointer">返回登入</p>
+    </div>
+  </div>
+</div>
+
+<!-- 主應用程式區塊 -->
+<div id="mainApp" style="display:none">
+  <div class="top-header">
+    <h5 id="pageTitle">RUNNER LOG <span id="remainingBadge" class="header-badge" style="display:none"></span>
+</h5>
+  </div>
+ 
+  <!-- 分頁內容 -->
+  <div id="tab-calendar" class="page-content active">
+  <div id="overtrainAlert"></div>
+  <div class="notebook-container">
+    <div id="calendar"></div>
+    
+    <!-- 新增：顏色說明圖例 -->
+    <div class="calendar-legend">
+      <div class="legend-item">
+        <span class="legend-dot dot-run"></span>
+        <span>正常練習</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot dot-rest"></span>
+        <span>休息日</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot dot-leave"></span>
+        <span>請假/修復</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div id="tab-history" class="page-content">
+    <div id="historyList"></div>
+  </div>
+
+  <div id="tab-leaderboard" class="page-content px-3">
+  <!-- 加入這行提示小字 -->
+  <div class="text-muted small text-center mb-3">
+    <i class="fa fa-info-circle me-1"></i>點擊隊員卡片可查看本週詳細紀錄
+  </div>
+  <div id="leaderboardList"></div>
+</div>
+
+  <div id="tab-admin" class="page-content px-3">
+  <!-- 1. 收件箱 (Inbox) -->
+  <div class="card p-3 mb-3 shadow-sm border-0" style="border-radius:15px; background: #fff9db;">
+    <h6 class="fw-bold"><i class="fa fa-envelope-open-text me-2"></i>通知信箱</h6>
+    <div id="userInbox" class="small py-2 text-dark">
+      <!-- 訊息會顯示在這裡 -->
+      無新訊息
+    </div>
+  </div>
+  <!-- 週報卡片 -->
+<div class="card p-3 mb-3 shadow-sm border-0" style="border-radius:15px; background: #e7f5ff; border-left: 6px solid #228be6 !important;">
+  <h6 class="fw-bold text-primary"><i class="fa fa-chart-line me-2"></i>每週戰報結算</h6>
+  <div id="weeklyReportContent" class="small py-2 text-dark" style="line-height: 1.6;">
+    本週數據結算中...
+  </div>
+</div>
+
+  <!-- 2. 個人設定 (所有成員) -->
+  <div class="card p-3 mb-3 shadow-sm border-0" style="border-radius:15px">
+    <h6 class="fw-bold">帳號設定</h6>
+    <div class="mb-3">
+      <label class="small text-muted">修改暱稱</label>
+      <div class="input-group">
+        <input type="text" id="userNameInput" class="form-control">
+        <button class="btn btn-outline-primary" onclick="handleUpdateNickname()">修改</button>
+      </div>
+    </div>
+    <div class="mb-2">
+      <label class="small text-muted">修改密碼</label>
+      <div class="input-group">
+        <input type="password" id="userPwInput" class="form-control" placeholder="輸入新密碼">
+        <button class="btn btn-outline-secondary" onclick="handleUpdatePassword()">更新</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 隊長專區 (僅管理員) -->
+  <div id="adminControls" style="display:none">
+    <div class="card p-3 mb-3 shadow-sm border-0" style="border-radius:15px; background: #f1f3f5;">
+      <h6 class="fw-bold text-primary">隊長專區</h6>
+      <div class="mb-3">
+        <label class="small text-muted">全隊週目標</label>
+        <div class="input-group">
+          <input type="number" id="globalTargetInput" class="form-control">
+          <span class="input-group-text">km</span>
+          <button class="btn btn-dark" onclick="handleUpdateGlobal()">更新</button>
+        </div>
+      </div>
+      <label class="small text-muted">隊員管理</label>
+      <div id="adminMemberList" class="mt-2"></div>
+    </div>
+  </div>
+
+  <button class="btn btn-outline-danger w-100 mt-2 mb-4" onclick="logout()">登出帳號</button>
+</div>
+
+ <!-- 底部導航欄 -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
+    <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
+    <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa fa-fire"></i><span>進度</span></div>
+    <div class="nav-item" onclick="switchTab('admin', this)"><i class="fa fa-user-circle"></i><span>我的</span></div>
+  </div>
+</div>
+
+
+<!-- 跑步輸入 Modal -->
+<div class="modal fade" id="entryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 20px;">
+      <div class="modal-header border-0"><h5 id="selectedDate"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+  <!-- 紀錄類型 -->
+  <select id="type" class="form-select mb-3">
+    <option value="Run">🏃‍♂️ 正常練習 (Run)</option>
+    <option value="Rest">🤸 休息日 (Rest)</option>
+    <option value="Leave">🧘‍♀️ 請假/修復中 (Leave)</option>
+  </select>
+  
+  <!-- 距離與時間 -->
+  <div class="row g-2 mb-3">
+    <div class="col-6">
+      <div class="input-group">
+        <input type="number" id="dist" class="form-control" placeholder="距離">
+        <span class="input-group-text">km</span>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="input-group">
+        <input type="number" id="dur" class="form-control" placeholder="時間">
+        <span class="input-group-text">min</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 心情按鈕 -->
+  <div class="feeling-group mb-3">
+    <label class="feeling-btn" onclick="selectFeeling('😫', this)"><input type="radio" name="feeling" value="😫"><span>😫</span><small>超痛苦</small></label>
+    <label class="feeling-btn" onclick="selectFeeling('😮‍💨', this)"><input type="radio" name="feeling" value="😮‍💨"><span>😮‍💨</span><small>有點累</small></label>
+    <label class="feeling-btn active" onclick="selectFeeling('🙂', this)"><input type="radio" name="feeling" value="🙂" checked><span>🙂</span><small>還好</small></label>
+    <label class="feeling-btn" onclick="selectFeeling('😎', this)"><input type="radio" name="feeling" value="😎"><span>😎</span><small>很輕鬆</small></label>
+  </div>
+  
+  <!-- 【核心修正】補回消失的備註欄 -->
+  <textarea id="remarks" class="form-control mb-3" placeholder="寫點備註吧..."></textarea>
+  
+  <!-- 照片上傳 -->
+  <div class="mb-3">
+    <label class="small text-muted">📸 上傳照片 (選填)</label>
+    <input type="file" id="photoFile" class="form-control form-control-sm" accept="image/*">
+    <div id="photoPreview" class="mt-2 d-none"><img src="" class="img-thumbnail" style="max-height: 150px;"></div>
+  </div>
+  
+  <button id="saveBtn" class="btn btn-primary w-100" onclick="submitEntry()">儲存紀錄</button>
+</div>
+    </div>
+  </div>
+</div>
+
+<!-- 成員週詳情 Modal -->
+<div class="modal fade" id="memberDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 20px;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="detailMemberName">成員週紀錄</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="weeklyDetailContent">
+          <!-- 這裡會由 JS 生成內容 -->
+          <div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> 讀取中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwoDLzL2yIP5A08m1QFKkWpAhs01VrMhxwSRap-55D6qVf-HQfaR5N_S72YhHKn9C2H/exec";
+
+// 萬用通訊橋樑 (GitHub -> Google Sheets)
+async function api(action, email, data = {}) {
+  try {
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      body: JSON.stringify({ action, email, data })
+    });
+    const result = await response.json();
+    return result;
+  } catch (err) {
+    console.error("API 呼叫失敗:", err);
+    return { success: false, msg: "連線失敗" };
+  }
+}
+
+let calendar, currentUserEmail, currentUser, allEvents = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const email = localStorage.getItem('run_email');
+  if (email) {
+    await checkAuth(email);
+  }
+});
+
+// 驗證身份
+async function checkAuth(email) {
+  const data = await api("getUserData", email);
+  if (data && data.registered) {
+    await loadApp(email, data);
+  } else {
+    localStorage.removeItem('run_email');
+  }
+}
+
+// 登入邏輯
+async function handleLogin() {
+  const e = document.getElementById('lEmail').value;
+  const p = document.getElementById('lPw').value;
+  if (!e || !p) return alert("請輸入帳號密碼");
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerText = "驗證中...";
+
+  const res = await api("loginUser", e, { password: p });
+  
+  if (res.success) {
+    localStorage.setItem('run_email', e);
+    await loadApp(e);
+  } else {
+    alert(res.msg);
+    btn.disabled = false;
+    btn.innerText = "登入";
+  }
+}
+
+// 載入 App 主程式
+async function loadApp(email, data) {
+  currentUserEmail = email;
+  if (!data) {
+    data = await api("getUserData", email);
+  }
+  renderUI(data);
+}
+
+// 渲染介面
+async function renderUI(data) {
+  currentUser = data.user;
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  
+  const nameInput = document.getElementById('userNameInput');
+  if (nameInput) nameInput.value = currentUser.Name || currentUser.name || "";
+  
+  // 更新週報與信箱
+  const reportEl = document.getElementById('weeklyReportContent');
+  if (reportEl) {
+    reportEl.innerHTML = currentUser.WeeklyReport ? `<b>${currentUser.WeeklyReport}</b>` : "本週努力中！";
+  }
+  
+  const inboxEl = document.getElementById('userInbox');
+  if (inboxEl && currentUser.Nudge) {
+    inboxEl.innerHTML = currentUser.Nudge.split('\n').map(msg => `<div class="mb-2 pb-2 border-bottom border-warning border-opacity-25">${msg}</div>`).join('') + 
+      `<div class="text-end mt-2"><button class="btn btn-sm btn-outline-danger" onclick="handleClearInbox()" style="font-size: 0.65rem;">清除信箱</button></div>`;
+  }
+
+  // 管理權限
+  if (currentUser.Role === 'Admin' || currentUser.role === 'Admin') {
+    document.getElementById('adminControls').style.display = 'block';
+    loadAdminData();
+  }
+
+  // 初始化月曆與資料
+  if (!calendar) {
+    initCalendar();
+  } else {
+    calendar.updateSize();
+  }
+  
+  // 【這就是非同步化】必須等待資料抓回來，後面的計算才有意義
+  await refreshData();
+}
+
+// 統一刷新資料的函數
+async function refreshData() {
+  const evts = await api("getActivities", currentUserEmail);
+  allEvents = evts;
+  if (calendar) calendar.refetchEvents(); // 這邊 FullCalendar 預設是用它自己的載入機制，但我們全域變數已更新
+  renderCircles();
+  updateRemainingDistance();
+  loadLeaderboard();
+  checkOvertrain();
+}
+
+// 修改後的月曆初始化 (不使用 google.script.run)
+function initCalendar() {
+  calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+    initialView: 'dayGridMonth', locale: 'zh-tw', height: 'auto', fixedWeekCount: false,
+    headerToolbar: { left: 'prev', center: 'title', right: 'next' },
+    dayCellContent: (arg) => arg.date.getDate().toString(),
+    datesSet: () => renderCircles(),
+    dateClick: (info) => {
+      document.getElementById('selectedDate').innerText = info.dateStr;
+      const exist = allEvents.find(e => e.start === info.dateStr);
+      // ... 清空欄位邏輯同前 ...
+      new bootstrap.Modal(document.getElementById('entryModal')).show();
+      document.querySelector('.bottom-nav').style.display = 'none';
+    },
+    // 改用我們抓好的全域變數
+    events: (fetchInfo, successCallback) => {
+      successCallback(allEvents);
+    }
+  });
+  calendar.render();
+}
+
+// 儲存紀錄 (全非同步版)
+async function submitEntry() {
+  const btn = document.getElementById('saveBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.innerHTML = '儲存中...';
+
+  const data = {
+    date: document.getElementById('selectedDate').innerText,
+    type: document.getElementById('type').value,
+    dist: document.getElementById('dist').value || 0,
+    dur: document.getElementById('dur').value || 0,
+    feeling: document.querySelector('input[name="feeling"]:checked').value,
+    remarks: document.getElementById('remarks').value
+  };
+
+  const res = await api("saveActivity", currentUserEmail, data);
+  if (res.success) {
+    bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide();
+    await refreshData(); // 儲存完畢後「等待」資料更新
+  }
+  btn.disabled = false;
+  btn.innerText = "儲存紀錄";
+}
+
+// --- 1. 積分榜渲染 (改為從 api 獲取) ---
+async function loadLeaderboard() {
+  const leaderboardList = document.getElementById('leaderboardList');
+  if (!leaderboardList) return;
+
+  // 取得最新排名資料
+  const list = await api("getLeaderboard");
+  
+  if (!list || list.length === 0) {
+    leaderboardList.innerHTML = '<p class="text-center text-muted">目前尚無排名</p>';
+    return;
+  }
+
+  leaderboardList.innerHTML = list.map(m => {
+    const p = Math.min((m.totalKm / m.target) * 100, 100);
+    return `
+      <div class="card p-3 mb-2 border-0 shadow-sm" style="border-radius:15px; cursor: pointer; position: relative;" 
+           onclick="showMemberWeeklyDetails('${m.email}', '${m.name}')">
+        <i class="fa fa-chevron-right text-light" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 0.8rem;"></i>
+        <div class="d-flex justify-content-between pe-3">
+          <strong>${m.name}</strong>
+          <span class="small">${m.totalKm} / ${m.target} km</span>
+        </div>
+        <div class="progress my-2" style="height:10px; border-radius: 5px; width: 95%;">
+          <div class="progress-bar bg-success" style="width:${p}%"></div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center pe-3">
+          <small class="text-muted">完成度 ${p.toFixed(1)}%</small>
+          <button class="btn btn-sm btn-outline-warning py-0 px-2" style="font-size: 0.75rem" 
+                  onclick="event.stopPropagation(); handleNudge('${m.email}')">
+            🔔 喚醒
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// --- 2. 歷史紀錄刪除功能 ---
+async function handleDelete(id) {
+  if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+  
+  const res = await api("deleteActivity", currentUserEmail, { id: id });
+  if (res.success) {
+    await refreshData(); // 刪除後，重新抓取資料並刷新月曆、積分榜、歷史清單
+    if (document.getElementById('tab-history').classList.contains('active')) loadHistory();
+  }
+}
+
+// --- 3. 喚醒隊友功能 ---
+async function handleNudge(targetEmail) {
+  if (targetEmail === currentUserEmail) return alert("不能喚醒自己");
+  
+  const msg = window.prompt("想對隊友說什麼？", "該跑步了！");
+  if (msg === null) return;
+
+  const res = await api("nudgeMember", currentUserEmail, { target: targetEmail, message: msg });
+  if (res.success) alert("提醒已發送！");
+}
+
+// --- 4. 修改暱稱與密碼 (個人設定) ---
+async function handleUpdateNickname() {
+  const n = document.getElementById('userNameInput').value;
+  if (!n) return alert("請輸入暱稱");
+  
+  const res = await api("updateNickname", currentUserEmail, { newName: n });
+  if (res.success) {
+    alert("暱稱已更新！");
+    currentUser.name = n;
+    await loadLeaderboard(); // 刷新排行榜上的名字
+  }
+}
+
+async function handleUpdatePassword() {
+  const newPw = document.getElementById('userPwInput').value;
+  if (!newPw || newPw.length < 3) return alert("密碼太短囉");
+
+  const res = await api("updatePassword", currentUserEmail, { newPassword: newPw });
+  if (res.success) {
+    alert("密碼修改成功！");
+    document.getElementById('userPwInput').value = "";
+  }
+}
+
+// --- 5. 管理員功能：更新全隊/個人目標 ---
+async function handleUpdateGlobal() {
+  const val = document.getElementById('globalTargetInput').value;
+  if (!val) return alert("請輸入目標數值");
+
+  const res = await api("updateGlobalTarget", currentUserEmail, { newTarget: val });
+  if (res.success) {
+    alert("全隊目標更新成功！");
+    // 改完大目標，重新抓取「個人資料」以獲得最新的 Target 欄位
+    const freshData = await api("getUserData", currentUserEmail);
+    await renderUI(freshData); 
+  }
+}
+
+async function loadAdminData() {
+  const members = await api("getAllMembersData", currentUserEmail);
+  const container = document.getElementById('adminMemberList');
+  if (!container) return;
+
+  container.innerHTML = members.map(m => `
+    <div class="py-2 border-bottom">
+      <div class="d-flex justify-content-between align-items-center">
+        <div><strong>${m.name}</strong><br><small>${m.email}</small></div>
+        <select class="form-select form-select-sm w-auto" onchange="handleRoleChange('${m.email}', this.value)">
+          <option value="User" ${m.role==='User'?'selected':''}>User</option>
+          <option value="Admin" ${m.role==='Admin'?'selected':''}>Admin</option>
+        </select>
+      </div>
+      <div class="input-group input-group-sm mt-2">
+        <span class="input-group-text">週目標</span>
+        <input type="number" class="form-control" value="${m.target}" id="target-${m.email.replace(/[@.]/g,'')}">
+        <span class="input-group-text">km</span>
+        <button class="btn btn-primary" onclick="handleUpdateMemberTarget('${m.email}')">儲存</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// --- 6. 查看隊員本週詳情 (Modal) ---
+async function showMemberWeeklyDetails(email, name) {
+  document.getElementById('detailMemberName').innerText = name + " 的本週紀錄";
+  document.getElementById('weeklyDetailContent').innerHTML = '<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> 讀取中...</div>';
+  
+  new bootstrap.Modal(document.getElementById('memberDetailModal')).show();
+
+  // 呼叫 API 抓取特定成員的紀錄
+  const details = await api("getMemberWeeklyDetails", email);
+  const container = document.getElementById('weeklyDetailContent');
+  
+  if (!details || details.length === 0) {
+    container.innerHTML = '<p class="text-center text-muted my-3">本週尚無跑步紀錄</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="list-group list-group-flush">
+      ${details.map(d => `
+        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+          <div><span class="badge bg-light text-dark me-2">${d.date}</span><strong>${d.dist} km</strong></div>
+          <div class="text-muted small"><i class="far fa-clock me-1"></i>${d.dur} min ${d.feeling}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// --- 7. 清空信箱與分頁切換 ---
+async function handleClearInbox() {
+  if (!confirm("確定要清空信箱嗎？")) return;
+  const res = await api("clearInbox", currentUserEmail);
+  if (res) {
+    document.getElementById('userInbox').innerText = "暫無新訊息";
+    currentUser.Nudge = "";
+  }
+}
+
+function switchTab(t, el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+  
+  if (t === 'history') loadHistory();
+  if (t === 'leaderboard') loadLeaderboard();
+  if (t === 'calendar' && calendar) {
+    calendar.updateSize();
+    renderCircles();
+  }
+}
+
+function logout() {
+  if (!confirm("確定要登出嗎？")) return;
+  localStorage.removeItem('run_email');
+  location.reload(); // GitHub 環境下 reload 是安全的，會回到登入頁
+}
+</script>
+<!-- 全螢幕週報彈窗 -->
+<div class="modal fade" id="weeklyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 25px;">
+      <div class="modal-header border-0 justify-content-center">
+        <h5 class="modal-title fw-bold"><i class="fa fa-trophy me-2"></i>上週戰報結算</h5>
+      </div>
+      <div class="modal-body report-body" id="fullScreenReportContent">
+        <!-- 週報內容會塞在這裡 -->
+      </div>
+      <div class="modal-footer border-0 justify-content-center">
+        <button type="button" class="btn btn-primary px-5" data-bs-dismiss="modal" style="border-radius: 25px;">收下戰報，繼續努力！</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
