@@ -474,94 +474,41 @@ html, body {
 <script>
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwoDLzL2yIP5A08m1QFKkWpAhs01VrMhxwSRap-55D6qVf-HQfaR5N_S72YhHKn9C2H/exec";
 
-// 萬用通訊橋樑 (GitHub -> Google Sheets)
-async function api(action, email, data = {}) {
-  try {
-    const response = await fetch(GAS_API_URL, {
-      method: "POST",
-      body: JSON.stringify({ action, email, data })
-    });
-    return await response.json();
-  } catch (err) {
-    console.error("API 呼叫失敗:", err);
-    return { success: false, msg: "連線失敗" };
-  }
-}
-
 let calendar, currentUserEmail, currentUser, allEvents = [];
 
-// 頁面載入後執行
 document.addEventListener('DOMContentLoaded', async () => {
   const email = localStorage.getItem('run_email');
-  if (email) {
-    await checkAuth(email);
-  }
+  if (email) await checkAuth(email);
 });
 
-// 驗證身份
 async function checkAuth(email) {
   const data = await api("getUserData", email);
-  if (data && data.registered) {
-    await loadApp(email, data);
-  } else {
-    localStorage.removeItem('run_email');
-  }
+  if (data && data.registered) await loadApp(email, data);
+  else localStorage.removeItem('run_email');
 }
 
-// 登入邏輯
 async function handleLogin() {
   const e = document.getElementById('lEmail').value;
   const p = document.getElementById('lPw').value;
   if (!e || !p) return alert("請輸入帳號密碼");
-
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true;
-  btn.innerText = "驗證中...";
-
+  document.getElementById('loginBtn').disabled = true;
   const res = await api("loginUser", e, { password: p });
-  if (res.success) {
-    localStorage.setItem('run_email', e);
-    await loadApp(e);
-  } else {
-    alert(res.msg);
-    btn.disabled = false;
-    btn.innerText = "登入";
-  }
+  if (res.success) { localStorage.setItem('run_email', e); await loadApp(e); }
+  else { alert(res.msg); document.getElementById('loginBtn').disabled = false; }
 }
 
-// 註冊邏輯
-async function handleReg() {
-  const n = document.getElementById('rName').value;
-  const e = document.getElementById('rEmail').value;
-  const p = document.getElementById('rPw').value;
-  if(!n || !e || !p) return alert("請填寫完整資訊");
-
-  const res = await api("registerUser", e, { name: n, password: p });
-  if(res.success) {
-    alert("註冊成功！請登入");
-    toggleMode(false);
-  } else {
-    alert(res.msg);
-  }
-}
-
-// 載入 App 主程式
 async function loadApp(email, data) {
   currentUserEmail = email;
   if (!data) data = await api("getUserData", email);
   renderUI(data);
 }
 
-// 渲染介面
 async function renderUI(data) {
   currentUser = data.user;
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('userNameInput').value = currentUser.Name || currentUser.name || "";
   
-  const nameInput = document.getElementById('userNameInput');
-  if (nameInput) nameInput.value = currentUser.Name || currentUser.name || "";
-  
-  // 更新週報與信箱
   const reportEl = document.getElementById('weeklyReportContent');
   if (reportEl) reportEl.innerHTML = currentUser.WeeklyReport ? `<b>${currentUser.WeeklyReport}</b>` : "本週努力中！";
   
@@ -571,10 +518,9 @@ async function renderUI(data) {
       `<div class="text-end mt-2"><button class="btn btn-sm btn-outline-danger" onclick="handleClearInbox()" style="font-size: 0.65rem;">清除信箱</button></div>`;
   }
 
-  // 管理權限
   if (currentUser.Role === 'Admin' || currentUser.role === 'Admin') {
     document.getElementById('adminControls').style.display = 'block';
-    loadAdminData();
+    await loadAdminData(); // 現在這個函數在下面補齊了
   }
 
   if (!calendar) initCalendar();
@@ -583,9 +529,9 @@ async function renderUI(data) {
   await refreshData();
 }
 
-// --- 核心：統一刷新資料 ---
 async function refreshData() {
-  allEvents = await api("getActivities", currentUserEmail);
+  const evts = await api("getActivities", currentUserEmail);
+  allEvents = evts;
   if (calendar) {
     calendar.removeAllEvents();
     calendar.addEventSource(allEvents);
@@ -596,7 +542,6 @@ async function refreshData() {
   checkOvertrain();
 }
 
-// --- 月曆功能 ---
 function initCalendar() {
   calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
     initialView: 'dayGridMonth', locale: 'zh-tw', height: 'auto', fixedWeekCount: false,
@@ -606,15 +551,14 @@ function initCalendar() {
     dateClick: (info) => {
       document.getElementById('selectedDate').innerText = info.dateStr;
       const exist = allEvents.find(e => e.start === info.dateStr);
-      const d = document.getElementById('dist'), t = document.getElementById('dur'), r = document.getElementById('remarks'), f = document.getElementById('photoFile'), p = document.getElementById('photoPreview');
+      const d = document.getElementById('dist'), t = document.getElementById('dur'), r = document.getElementById('remarks');
       if(exist) {
         d.value = exist.extendedProps.dist || ""; t.value = exist.extendedProps.dur || ""; r.value = exist.extendedProps.remarks || "";
         selectFeeling(exist.extendedProps.feeling);
       } else {
         d.value = ""; t.value = ""; r.value = ""; selectFeeling('🙂');
       }
-      f.value = ""; p.classList.add('d-none');
-      document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').innerText = "儲存紀錄";
+      document.getElementById('saveBtn').disabled = false;
       new bootstrap.Modal(document.getElementById('entryModal')).show();
       document.querySelector('.bottom-nav').style.display = 'none';
     },
@@ -633,13 +577,6 @@ function renderCircles() {
       cell.appendChild(c);
     }
   });
-}
-
-// --- UI 輔助功能 ---
-function selectFeeling(val, el) {
-  document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('active'));
-  if(!el) el = Array.from(document.querySelectorAll('.feeling-btn')).find(b => b.innerText.includes(val));
-  if(el) { el.classList.add('active'); el.querySelector('input').checked = true; }
 }
 
 function updateRemainingDistance() {
@@ -661,53 +598,6 @@ function updateRemainingDistance() {
   }
 }
 
-// --- 歷史紀錄 (分月份摺疊) ---
-function loadHistory() {
-  const container = document.getElementById('historyList');
-  if (!allEvents.length) { container.innerHTML = '<p class="text-center mt-5">尚無紀錄</p>'; return; }
-  const sorted = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
-  const groups = {};
-  sorted.forEach(e => {
-    const month = e.start.substring(0, 7);
-    if(!groups[month]) groups[month] = [];
-    groups[month].push(e);
-  });
-  let html = '';
-  Object.keys(groups).forEach((month, idx) => {
-    const mid = `month-${month.replace('-','')}`;
-    html += `<div class="month-group"><div class="month-header" data-bs-toggle="collapse" data-bs-target="#${mid}"><span>${month}</span><i class="fa fa-chevron-down"></i></div><div id="${mid}" class="collapse ${idx===0?'show':''} bg-white"><div class="py-2">` + 
-      groups[month].map(e => {
-        const type = e.extendedProps.type;
-        const bcolor = type==='Run'?'success':type==='Rest'?'warning':'primary';
-        return `<div class="history-card border-start border-5 border-${bcolor}"><div class="history-info"><div class="small text-muted">${e.start}</div><div class="history-stats">🏃 ${e.extendedProps.dist} km / ${e.extendedProps.dur} min</div><div class="mt-1">${e.extendedProps.feeling} <span class="small text-muted">${e.extendedProps.remarks || ''}</span></div></div><div class="d-flex flex-column align-items-end"><div class="history-delete mb-2" onclick="handleDelete('${e.extendedProps.id}')"><i class="fa fa-trash"></i></div>${e.extendedProps.photoId ? `<img src="https://drive.google.com/thumbnail?id=${e.extendedProps.photoId}&sz=w200" class="history-photo" onclick="window.open('https://drive.google.com/uc?id=${e.extendedProps.photoId}')">` : ''}</div></div>`;
-      }).join('') + `</div></div></div>`;
-  });
-  container.innerHTML = html;
-}
-
-// --- 數據存取功能 ---
-async function submitEntry() {
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true; btn.innerHTML = '儲存中...';
-  const data = {
-    date: document.getElementById('selectedDate').innerText, type: document.getElementById('type').value,
-    dist: document.getElementById('dist').value || 0, dur: document.getElementById('dur').value || 0,
-    feeling: document.querySelector('input[name="feeling"]:checked').value, remarks: document.getElementById('remarks').value
-  };
-  const res = await api("saveActivity", currentUserEmail, data);
-  if (res.success) {
-    bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide();
-    await refreshData();
-  }
-  btn.disabled = false; btn.innerText = "儲存紀錄";
-}
-
-async function handleDelete(id) {
-  if(!confirm("確定要刪除這筆紀錄嗎？")) return;
-  const res = await api("deleteActivity", currentUserEmail, { id });
-  if(res.success) await refreshData();
-}
-
 async function loadLeaderboard() {
   const list = await api("getLeaderboard");
   document.getElementById('leaderboardList').innerHTML = list.map(m => {
@@ -716,39 +606,70 @@ async function loadLeaderboard() {
   }).join('');
 }
 
-function checkOvertrain() {
-  const el = document.getElementById('overtrainAlert');
-  if(!allEvents.length) return;
-  const s = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
-  let streak = 0;
-  if(s[0].extendedProps.type === 'Run') {
-    for(let i=0; i<s.length; i++) {
-      if(i===0) streak=1;
-      else {
-        const d = (new Date(s[i-1].start)-new Date(s[i].start))/86400000;
-        if(d===1 && s[i].extendedProps.type==='Run') streak++; else break;
-      }
-    }
-  }
-  if(streak>=3) { el.innerHTML=`⚠️ 已連跑 ${streak} 天，請休息！`; el.style.display='block'; } else el.style.display='none';
+// --- 【關鍵：補回管理員清單功能】 ---
+async function loadAdminData() {
+  const members = await api("getAllMembersData", currentUserEmail);
+  document.getElementById('adminMemberList').innerHTML = members.map(m => `
+    <div class="py-2 border-bottom">
+      <div class="d-flex justify-content-between align-items-center">
+        <div><strong>${m.name}</strong><br><small>${m.email}</small></div>
+        <select class="form-select form-select-sm w-auto" onchange="handleRoleChange('${m.email}', this.value)">
+          <option value="User" ${m.role==='User'?'selected':''}>User</option>
+          <option value="Admin" ${m.role==='Admin'?'selected':''}>Admin</option>
+        </select>
+      </div>
+      <div class="input-group input-group-sm mt-2">
+        <span class="input-group-text">週目標</span>
+        <input type="number" class="form-control" value="${m.target}" id="target-${m.email.replace(/[@.]/g,'')}">
+        <span class="input-group-text">km</span>
+        <button class="btn btn-primary" onclick="handleUpdateMemberTarget('${m.email}')">儲存</button>
+      </div>
+    </div>
+  `).join('');
 }
 
-// --- 其他 Admin/設定 功能 (簡化版) ---
-async function handleUpdateNickname() {
-  const n = document.getElementById('userNameInput').value;
-  const res = await api("updateNickname", currentUserEmail, { newName: n });
-  if(res) { alert("已更新！"); await loadLeaderboard(); }
+async function handleUpdateMemberTarget(email) {
+  const val = document.getElementById('target-'+email.replace(/[@.]/g,'')).value;
+  await api("updateMemberTarget", currentUserEmail, { targetEmail: email, newTarget: val });
+  alert("更新成功");
+  await refreshData();
 }
 
-async function handleUpdatePassword() {
-  const p = document.getElementById('userPwInput').value;
-  const res = await api("updatePassword", currentUserEmail, { newPassword: p });
-  if(res) alert("密碼已修改！");
+async function handleRoleChange(email, role) {
+  await api("updateMemberRole", currentUserEmail, { targetEmail: email, newRole: role });
+  alert("權限已更改");
+}
+// --- 【補齊完畢】 ---
+
+function loadHistory() {
+  const sorted = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
+  const groups = {};
+  sorted.forEach(e => { const month = e.start.substring(0, 7); if(!groups[month]) groups[month] = []; groups[month].push(e); });
+  document.getElementById('historyList').innerHTML = Object.keys(groups).map((month, idx) => `
+    <div class="month-group">
+      <div class="month-header" data-bs-toggle="collapse" data-bs-target="#m${idx}"><span>${month}</span><i class="fa fa-chevron-down"></i></div>
+      <div id="m${idx}" class="collapse ${idx===0?'show':''} bg-white">
+        ${groups[month].map(e => `<div class="history-card border-start border-5 border-${e.extendedProps.type==='Run'?'success':'warning'}"><div><div class="small text-muted">${e.start}</div><div>🏃 ${e.extendedProps.dist} km / ${e.extendedProps.dur} min</div></div><div class="history-delete" onclick="handleDelete('${e.extendedProps.id}')"><i class="fa fa-trash"></i></div></div>`).join('')}
+      </div>
+    </div>`).join('');
 }
 
-function toggleMode(isReg) {
-  document.getElementById('loginBox').style.display = isReg ? 'none' : 'block';
-  document.getElementById('regBox').style.display = isReg ? 'block' : 'none';
+async function submitEntry() {
+  const btn = document.getElementById('saveBtn'); btn.disabled = true;
+  const data = {
+    date: document.getElementById('selectedDate').innerText, type: document.getElementById('type').value,
+    dist: document.getElementById('dist').value || 0, dur: document.getElementById('dur').value || 0,
+    feeling: document.querySelector('input[name="feeling"]:checked').value, remarks: document.getElementById('remarks').value
+  };
+  const res = await api("saveActivity", currentUserEmail, data);
+  if(res.success) { bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide(); await refreshData(); }
+  btn.disabled = false;
+}
+
+function selectFeeling(val, el) {
+  document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('active'));
+  if(!el) el = Array.from(document.querySelectorAll('.feeling-btn')).find(b => b.innerText.includes(val));
+  if(el) { el.classList.add('active'); el.querySelector('input').checked = true; }
 }
 
 function switchTab(t, el) {
@@ -760,10 +681,13 @@ function switchTab(t, el) {
   if (t === 'calendar' && calendar) { calendar.updateSize(); renderCircles(); }
 }
 
-function logout() {
-  localStorage.removeItem('run_email');
-  location.reload();
+async function handleNudge(target) {
+  const msg = window.prompt("想對隊友說什麼？", "該跑步了！");
+  if (msg) { await api("nudgeMember", currentUserEmail, { target, message: msg }); alert("已提醒"); }
 }
+
+function logout() { localStorage.removeItem('run_email'); location.reload(); }
+function toggleMode(isReg) { document.getElementById('loginBox').style.display = isReg ? 'none' : 'block'; document.getElementById('regBox').style.display = isReg ? 'block' : 'none'; }
 </script>
 <!-- 全螢幕週報彈窗 -->
 <div class="modal fade" id="weeklyModal" tabindex="-1" aria-hidden="true">
