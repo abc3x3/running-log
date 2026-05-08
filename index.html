@@ -730,6 +730,30 @@ async function loadAdminData() {
     </div>`).join('');
 }
 
+function uploadPhoto(base64Data, fileName) {
+  try {
+    // 強制觸發授權檢測 (加這行在註釋裡有助於 Google 偵測權限)
+    // DriveApp.getFiles(); 
+
+    const folder = DriveApp.getFolderById(PHOTO_FOLDER_ID);
+    
+    // 處理 GitHub 傳來的 Base64 格式
+    const splitData = base64Data.split(',');
+    const contentType = splitData[0].match(/:(.*?);/)[1]; // 自動抓取 image/png 或 image/jpeg
+    const bytes = Utilities.base64Decode(splitData[1]);
+    
+    const blob = Utilities.newBlob(bytes, contentType, fileName);
+    const file = folder.createFile(blob);
+    
+    // 設為知道連結的人皆可檢視 (紀錄頁面才能看到縮圖)
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    return file.getId();
+  } catch (e) {
+    return "Error: " + e.toString();
+  }
+}
+  
 function loadHistory() {
   const sorted = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
   const groups = {};
