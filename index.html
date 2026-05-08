@@ -476,17 +476,11 @@ async function api(action, email, data = {}) {
       method: "POST",
       body: JSON.stringify({ action, email, data })
     });
-    // 先取得文字，避免 JSON 格式錯誤直接當機
-    const text = await response.text();
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.log("回傳非 JSON 格式:", text);
-      return { success: true, photoId: text }; // 處理照片 ID 直接回傳字串的情況
-    }
+    const result = await response.json(); // GitHub 必須精準接收 JSON
+    return result;
   } catch (err) {
     console.error("API 連線失敗:", err);
-    return { success: false, msg: "無法連線" };
+    return { success: false };
   }
 }
 
@@ -740,7 +734,9 @@ async function submitEntry() {
       base64Data: base64Data, 
       fileName: file.name 
     });
-    photoId = photoRes.photoId;
+     if (photoRes && photoRes.photoId) {
+      photoId = photoRes.photoId;
+    }
   }
 
   // 2. 準備存檔資料
