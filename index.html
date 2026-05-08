@@ -430,6 +430,14 @@ html, body {
       </div>
     </div>
   </div>
+
+  <!-- 底部導航欄：確保在 mainApp 內，但在所有分頁與 Modal 之外 -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
+  <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
+  <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa fa-fire"></i><span>進度</span></div>
+  <div class="nav-item" onclick="switchTab('admin', this)"><i class="fa fa-user-circle"></i><span>我的</span></div>
+</div>
 </div>
 
 <!-- 成員週詳情 Modal -->
@@ -451,14 +459,6 @@ html, body {
       <div class="modal-footer border-0 justify-content-center"><button type="button" class="btn btn-primary px-5" data-bs-dismiss="modal" style="border-radius: 25px;">收下戰報，繼續努力！</button></div>
     </div>
   </div>
-</div>
-
-<!-- 底部導航欄：確保在 mainApp 內，但在所有分頁與 Modal 之外 -->
-<div class="bottom-nav">
-  <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
-  <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
-  <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa fa-fire"></i><span>進度</span></div>
-  <div class="nav-item" onclick="switchTab('admin', this)"><i class="fa fa-user-circle"></i><span>我的</span></div>
 </div>
 
 
