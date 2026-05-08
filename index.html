@@ -473,15 +473,30 @@ async function api(action, email, data = {}) {
 
 let calendar, currentUserEmail, currentUser, allEvents = [];
 
+// 頁面開啟時，自動檢查本地是否有登入紀錄
 document.addEventListener('DOMContentLoaded', async () => {
-  const email = localStorage.getItem('run_email');
-  if (email) await checkAuth(email);
+  const savedEmail = localStorage.getItem('run_email');
+  if (savedEmail) {
+    // 顯示一個簡單的載入狀態（選做）
+    console.log("偵測到已儲存帳號，嘗試自動登入...");
+    await checkAuth(savedEmail);
+  } else {
+    // 沒資料就乖乖待在登入頁
+    document.getElementById('loginPage').style.display = 'block';
+  }
 });
 
+// 向後端確認該 Email 是否合法註冊過
 async function checkAuth(email) {
-  const data = await api("getUserData", email);
-  if (data && data.registered) await loadApp(email, data);
-  else localStorage.removeItem('run_email');
+  const res = await api("getUserData", email);
+  if (res && res.registered) {
+    // 驗證成功，直接載入 App
+    await loadApp(email, res);
+  } else {
+    // 驗證失敗（可能被刪帳號了），清空本地紀錄並要求手動登入
+    localStorage.removeItem('run_email');
+    document.getElementById('loginPage').style.display = 'block';
+  }
 }
 
 async function handleLogin() {
