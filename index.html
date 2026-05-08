@@ -392,48 +392,29 @@ html, body {
     <div class="modal-content" style="border-radius: 20px;">
       <div class="modal-header border-0"><h5 id="selectedDate"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body">
-  <!-- 紀錄類型 -->
-  <select id="type" class="form-select mb-3">
-    <option value="Run">🏃‍♂️ 正常練習 (Run)</option>
-    <option value="Rest">🤸 休息日 (Rest)</option>
-    <option value="Leave">🧘‍♀️ 請假/修復中 (Leave)</option>
-  </select>
-  
-  <!-- 距離與時間 -->
-  <div class="row g-2 mb-3">
-    <div class="col-6">
-      <div class="input-group">
-        <input type="number" id="dist" class="form-control" placeholder="距離">
-        <span class="input-group-text">km</span>
+        <select id="type" class="form-select mb-3">
+          <option value="Run">🏃‍♂️ 正常練習 (Run)</option>
+          <option value="Rest">🤸 休息日 (Rest)</option>
+          <option value="Leave">🧘‍♀️ 請假/修復中 (Leave)</option>
+        </select>
+        <div class="row g-2 mb-3">
+          <div class="col-6"><div class="input-group"><input type="number" id="dist" class="form-control" placeholder="距離"><span class="input-group-text">km</span></div></div>
+          <div class="col-6"><div class="input-group"><input type="number" id="dur" class="form-control" placeholder="時間"><span class="input-group-text">min</span></div></div>
+        </div>
+        <div class="feeling-group mb-3">
+          <label class="feeling-btn" onclick="selectFeeling('😫', this)"><input type="radio" name="feeling" value="😫"><span>😫</span><small>超痛苦</small></label>
+          <label class="feeling-btn" onclick="selectFeeling('😮‍💨', this)"><input type="radio" name="feeling" value="😮‍💨"><span>😮‍💨</span><small>有點累</small></label>
+          <label class="feeling-btn active" onclick="selectFeeling('🙂', this)"><input type="radio" name="feeling" value="🙂" checked><span>🙂</span><small>還好</small></label>
+          <label class="feeling-btn" onclick="selectFeeling('😎', this)"><input type="radio" name="feeling" value="😎"><span>😎</span><small>很輕鬆</small></label>
+        </div>
+        <textarea id="remarks" class="form-control mb-3" placeholder="寫點備註吧..."></textarea>
+        <div class="mb-3">
+          <label class="small text-muted">📸 上傳照片 (選填)</label>
+          <input type="file" id="photoFile" class="form-control form-control-sm" accept="image/*">
+          <div id="photoPreview" class="mt-2 d-none"><img src="" class="img-thumbnail" style="max-height: 150px;"></div>
+        </div>
+        <button id="saveBtn" class="btn btn-primary w-100" onclick="submitEntry()">儲存紀錄</button>
       </div>
-    </div>
-    <div class="col-6">
-      <div class="input-group">
-        <input type="number" id="dur" class="form-control" placeholder="時間">
-        <span class="input-group-text">min</span>
-      </div>
-    </div>
-  </div>
-  
-  <!-- 心情按鈕 -->
-  <div class="feeling-group mb-3">
-    <label class="feeling-btn" onclick="selectFeeling('😫', this)"><input type="radio" name="feeling" value="😫"><span>😫</span><small>超痛苦</small></label>
-    <label class="feeling-btn" onclick="selectFeeling('😮‍💨', this)"><input type="radio" name="feeling" value="😮‍💨"><span>😮‍💨</span><small>有點累</small></label>
-    <label class="feeling-btn active" onclick="selectFeeling('🙂', this)"><input type="radio" name="feeling" value="🙂" checked><span>🙂</span><small>還好</small></label>
-    <label class="feeling-btn" onclick="selectFeeling('😎', this)"><input type="radio" name="feeling" value="😎"><span>😎</span><small>很輕鬆</small></label>
-  </div>
-  
-  <!-- 【核心修正】補回消失的備註欄 -->
-  <textarea id="remarks" class="form-control mb-3" placeholder="寫點備註吧..."></textarea>
-  
-  <!-- 照片上傳 -->
-  <div class="mb-3">
-    <label class="small text-muted">📸 上傳照片 (選填)</label>
-    <input type="file" id="photoFile" class="form-control form-control-sm" accept="image/*">
-    <div id="photoPreview" class="mt-2 d-none"><img src="" class="img-thumbnail" style="max-height: 150px;"></div>
-  </div>
-  
-  <button id="saveBtn" class="btn btn-primary w-100" onclick="submitEntry()">儲存紀錄</button></div>
     </div>
   </div>
 </div>
@@ -442,43 +423,47 @@ html, body {
 <div class="modal fade" id="memberDetailModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius: 20px;">
-      <div class="modal-header border-0">
-        <h5 class="modal-title" id="detailMemberName">成員週紀錄</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div id="weeklyDetailContent">
-          <!-- 這裡會由 JS 生成內容 -->
-          <div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> 讀取中...</div>
-        </div>
-      </div>
+      <div class="modal-header border-0"><h5 class="modal-title" id="detailMemberName">成員週紀錄</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><div id="weeklyDetailContent"></div></div>
     </div>
   </div>
 </div>
-  
-  <!-- 底部導航欄 -->
-  <div class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
-    <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
-    <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa fa-fire"></i><span>進度</span></div>
-    <div class="nav-item" onclick="switchTab('admin', this)"><i class="fa fa-user-circle"></i><span>我的</span></div>
+
+<!-- 全螢幕週報彈窗 -->
+<div class="modal fade" id="weeklyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 25px;">
+      <div class="modal-header border-0 justify-content-center"><h5 class="modal-title fw-bold"><i class="fa fa-trophy me-2"></i>上週戰報結算</h5></div>
+      <div class="modal-body report-body" id="fullScreenReportContent"></div>
+      <div class="modal-footer border-0 justify-content-center"><button type="button" class="btn btn-primary px-5" data-bs-dismiss="modal" style="border-radius: 25px;">收下戰報，繼續努力！</button></div>
+    </div>
   </div>
 </div>
+
+<!-- 【最核心修正】底部導航欄：必須放在所有 Modal 之外 -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
+  <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
+  <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa fa-fire"></i><span>進度</span></div>
+  <div class="nav-item" onclick="switchTab('admin', this)"><i class="fa fa-user-circle"></i><span>我的</span></div>
+</div>
+
+</div> <!-- mainApp 的結尾 -->
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyWvy4YrwhKMWXCdkxQZKdDJABLNwwBt8xSXTeENmicuq_59C--b20tJchTE37-Tizj/exec";
+// --- 請務必確認此網址正確 ---
+const GAS_API_URL = "你的GAS網址貼在這裡"; 
 
-// --- 修正後的 api 函數 (增加照片處理的穩定性) ---
 async function api(action, email, data = {}) {
   try {
     const response = await fetch(GAS_API_URL, {
       method: "POST",
       body: JSON.stringify({ action, email, data })
     });
-    const result = await response.json(); // GitHub 必須精準接收 JSON
+    const result = await response.json();
     return result;
   } catch (err) {
     console.error("API 連線失敗:", err);
@@ -486,53 +471,6 @@ async function api(action, email, data = {}) {
   }
 }
 
-// --- 補回缺失的 checkOvertrain 函數 (解決紅字報錯) ---
-function checkOvertrain() {
-  const el = document.getElementById('overtrainAlert');
-  if (!el || !allEvents || allEvents.length < 3) {
-    if(el) el.style.display = 'none';
-    return;
-  }
-  const s = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
-  let streak = 0;
-  if(s[0].extendedProps.type === 'Run') {
-    for(let i=0; i<s.length; i++) {
-      if(i===0) streak=1;
-      else {
-        const d = Math.round((new Date(s[i-1].start)-new Date(s[i].start))/86400000);
-        if(d===1 && s[i].extendedProps.type==='Run') streak++; else break;
-      }
-    }
-  }
-  if(streak>=3) { el.innerHTML=`⚠️ 已連跑 ${streak} 天，請休息！`; el.style.display='block'; } 
-  else el.style.display='none';
-}
-
-// --- 補回缺失的 handleDelete 函數 (讓歷史紀錄可以刪除) ---
-async function handleDelete(id) {
-  if(!confirm("確定要刪除這筆紀錄嗎？")) return;
-  const res = await api("deleteActivity", currentUserEmail, { id: id });
-  if(res.success) await refreshData();
-}
-
-// --- 補回缺失的 showMemberWeeklyDetails 函數 (讓進度頁點擊有效) ---
-async function showMemberWeeklyDetails(email, name) {
-  document.getElementById('detailMemberName').innerText = name + " 的本週紀錄";
-  document.getElementById('weeklyDetailContent').innerHTML = '<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> 讀取中...</div>';
-  new bootstrap.Modal(document.getElementById('memberDetailModal')).show();
-  const details = await api("getMemberWeeklyDetails", email);
-  const container = document.getElementById('weeklyDetailContent');
-  if (!details || details.length === 0) {
-    container.innerHTML = '<p class="text-center text-muted my-3">本週尚無跑步紀錄</p>';
-    return;
-  }
-  container.innerHTML = `<div class="list-group list-group-flush">${details.map(d => `
-    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-      <div><span class="badge bg-light text-dark me-2">${d.date}</span><strong>${d.dist} km</strong></div>
-      <div class="text-muted small">${d.dur} min ${d.feeling}</div>
-    </div>`).join('')}</div>`;
-}
-  
 let calendar, currentUserEmail, currentUser, allEvents = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -556,6 +494,13 @@ async function handleLogin() {
   else { alert(res.msg); document.getElementById('loginBtn').disabled = false; }
 }
 
+async function handleReg() {
+  const n = document.getElementById('rName').value, e = document.getElementById('rEmail').value, p = document.getElementById('rPw').value;
+  if(!n || !e || !p) return alert("資訊不完整");
+  const res = await api("registerUser", e, { name: n, password: p });
+  if (res.success) { alert("註冊成功！"); toggleMode(false); } else alert(res.msg);
+}
+
 async function loadApp(email, data) {
   currentUserEmail = email;
   if (!data) data = await api("getUserData", email);
@@ -566,43 +511,35 @@ async function renderUI(data) {
   currentUser = data.user;
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('userNameInput').value = currentUser.Name || currentUser.name || "";
   
-  const reportEl = document.getElementById('weeklyReportContent');
-  if (reportEl) reportEl.innerHTML = currentUser.WeeklyReport ? `<b>${currentUser.WeeklyReport}</b>` : "本週努力中！";
+  const nameInput = document.getElementById('userNameInput');
+  if (nameInput) nameInput.value = currentUser.Name || currentUser.name || "";
   
-  const inboxEl = document.getElementById('userInbox');
-  if (inboxEl && currentUser.Nudge) {
-    inboxEl.innerHTML = currentUser.Nudge.split('\n').map(msg => `<div class="mb-2 pb-2 border-bottom border-warning border-opacity-25">${msg}</div>`).join('') + 
-      `<div class="text-end mt-2"><button class="btn btn-sm btn-outline-danger" onclick="handleClearInbox()" style="font-size: 0.65rem;">清除信箱</button></div>`;
+  if (document.getElementById('weeklyReportContent')) {
+    document.getElementById('weeklyReportContent').innerHTML = currentUser.WeeklyReport ? `<b>${currentUser.WeeklyReport}</b>` : "本週戰報結算中...";
   }
 
   if (currentUser.Role === 'Admin' || currentUser.role === 'Admin') {
     document.getElementById('adminControls').style.display = 'block';
-    await loadAdminData(); // 現在這個函數在下面補齊了
+    await loadAdminData();
   }
 
   if (!calendar) initCalendar();
-  else calendar.updateSize();
+  else { calendar.updateSize(); calendar.refetchEvents(); }
   
   await refreshData();
+  checkFirstTimeWeeklyReport();
 }
 
 async function refreshData() {
   const evts = await api("getActivities", currentUserEmail);
   if (evts) {
     allEvents = evts;
-    
-    // 確保月曆更新紀錄
-    if (calendar) {
-      calendar.removeAllEvents();
-      calendar.addEventSource(allEvents);
-    }
-    
-    renderCircles();          // 重新畫圓圈
-    updateRemainingDistance(); // 重新算剩餘里程
-    loadLeaderboard();        // 刷新排行榜
-    checkOvertrain();         // 檢查連跑
+    if (calendar) { calendar.removeAllEvents(); calendar.addEventSource(allEvents); }
+    renderCircles();
+    updateRemainingDistance();
+    loadLeaderboard();
+    checkOvertrain();
   }
 }
 
@@ -615,13 +552,14 @@ function initCalendar() {
     dateClick: (info) => {
       document.getElementById('selectedDate').innerText = info.dateStr;
       const exist = allEvents.find(e => e.start === info.dateStr);
-      const d = document.getElementById('dist'), t = document.getElementById('dur'), r = document.getElementById('remarks');
+      const d = document.getElementById('dist'), t = document.getElementById('dur'), r = document.getElementById('remarks'), f = document.getElementById('photoFile'), p = document.getElementById('photoPreview');
       if(exist) {
         d.value = exist.extendedProps.dist || ""; t.value = exist.extendedProps.dur || ""; r.value = exist.extendedProps.remarks || "";
         selectFeeling(exist.extendedProps.feeling);
       } else {
         d.value = ""; t.value = ""; r.value = ""; selectFeeling('🙂');
       }
+      f.value = ""; p.classList.add('d-none');
       document.getElementById('saveBtn').disabled = false;
       new bootstrap.Modal(document.getElementById('entryModal')).show();
       document.querySelector('.bottom-nav').style.display = 'none';
@@ -629,6 +567,31 @@ function initCalendar() {
     events: allEvents
   });
   calendar.render();
+}
+
+async function submitEntry() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.innerHTML = '儲存中...';
+
+  let photoId = "";
+  const fileInput = document.getElementById('photoFile');
+  if (fileInput && fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const base64Data = await new Promise(resolve => {
+      const reader = new FileReader(); reader.onload = e => resolve(e.target.result); reader.readAsDataURL(file);
+    });
+    const photoRes = await api("uploadPhoto", currentUserEmail, { base64Data, fileName: file.name });
+    photoId = photoRes.photoId || "";
+  }
+
+  const data = {
+    date: document.getElementById('selectedDate').innerText, type: document.getElementById('type').value,
+    dist: document.getElementById('dist').value || 0, dur: document.getElementById('dur').value || 0,
+    feeling: document.querySelector('input[name="feeling"]:checked').value, remarks: document.getElementById('remarks').value, photoId: photoId
+  };
+  const res = await api("saveActivity", currentUserEmail, data);
+  if(res.success) { bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide(); await refreshData(); }
+  btn.disabled = false; btn.innerText = "儲存紀錄";
 }
 
 function renderCircles() {
@@ -646,20 +609,30 @@ function renderCircles() {
 function updateRemainingDistance() {
   const badge = document.getElementById('remainingBadge');
   if (!badge || !currentUser) return;
-  const now = new Date(), sun = new Date(now.setDate(now.getDate() - now.getDay()));
-  const sunStr = sun.toISOString().split('T')[0];
+  const now = new Date(), sun = new Date(now.setDate(now.getDate() - now.getDay())), sunStr = sun.toISOString().split('T')[0];
   const thisWeekKm = allEvents.filter(e => e.extendedProps.type === 'Run' && e.start >= sunStr).reduce((sum, e) => sum + (Number(e.extendedProps.dist) || 0), 0);
   const target = Number(currentUser.Target || currentUser.target) || 20;
   const remaining = (target - thisWeekKm).toFixed(1);
-  if (remaining > 0) {
-    badge.innerHTML = `<i class="fa fa-fire me-1"></i>還差 ${remaining} km`;
-    badge.className = 'header-badge badge-warning';
-    badge.style.display = 'inline-block';
-  } else {
-    badge.innerHTML = `<i class="fa fa-check-circle me-1"></i>本週已達標!`;
-    badge.className = 'header-badge badge-success';
-    badge.style.display = 'inline-block';
+  if (remaining > 0) { badge.innerHTML = `<i class="fa fa-fire me-1"></i>還差 ${remaining} km`; badge.className = 'header-badge badge-warning'; }
+  else { badge.innerHTML = `<i class="fa fa-check-circle me-1"></i>本週已達標!`; badge.className = 'header-badge badge-success'; }
+  badge.style.display = 'inline-block';
+}
+
+function checkOvertrain() {
+  const el = document.getElementById('overtrainAlert');
+  if(!el || !allEvents.length) return;
+  const s = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
+  let streak = 0;
+  if(s[0].extendedProps.type === 'Run') {
+    for(let i=0; i<s.length; i++) {
+      if(i===0) streak=1;
+      else {
+        const d = Math.round((new Date(s[i-1].start)-new Date(s[i].start))/86400000);
+        if(d===1 && s[i].extendedProps.type==='Run') streak++; else break;
+      }
+    }
   }
+  if(streak>=3) { el.innerHTML=`⚠️ 已連跑 ${streak} 天，請休息！`; el.style.display='block'; } else el.style.display='none';
 }
 
 async function loadLeaderboard() {
@@ -670,40 +643,26 @@ async function loadLeaderboard() {
   }).join('');
 }
 
-// --- 【關鍵：補回管理員清單功能】 ---
+async function showMemberWeeklyDetails(email, name) {
+  document.getElementById('detailMemberName').innerText = name + " 的本週紀錄";
+  document.getElementById('weeklyDetailContent').innerHTML = '讀取中...';
+  new bootstrap.Modal(document.getElementById('memberDetailModal')).show();
+  const details = await api("getMemberWeeklyDetails", email);
+  document.getElementById('weeklyDetailContent').innerHTML = `<div class="list-group list-group-flush">${details.map(d => `
+    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+      <div><span class="badge bg-light text-dark me-2">${d.date}</span><strong>${d.dist} km</strong></div>
+      <div class="text-muted small">${d.dur} min ${d.feeling}</div>
+    </div>`).join('')}</div>`;
+}
+
 async function loadAdminData() {
   const members = await api("getAllMembersData", currentUserEmail);
   document.getElementById('adminMemberList').innerHTML = members.map(m => `
     <div class="py-2 border-bottom">
-      <div class="d-flex justify-content-between align-items-center">
-        <div><strong>${m.name}</strong><br><small>${m.email}</small></div>
-        <select class="form-select form-select-sm w-auto" onchange="handleRoleChange('${m.email}', this.value)">
-          <option value="User" ${m.role==='User'?'selected':''}>User</option>
-          <option value="Admin" ${m.role==='Admin'?'selected':''}>Admin</option>
-        </select>
-      </div>
-      <div class="input-group input-group-sm mt-2">
-        <span class="input-group-text">週目標</span>
-        <input type="number" class="form-control" value="${m.target}" id="target-${m.email.replace(/[@.]/g,'')}">
-        <span class="input-group-text">km</span>
-        <button class="btn btn-primary" onclick="handleUpdateMemberTarget('${m.email}')">儲存</button>
-      </div>
-    </div>
-  `).join('');
+      <div class="d-flex justify-content-between align-items-center"><div><strong>${m.name}</strong></div><select class="form-select form-select-sm w-auto" onchange="handleRoleChange('${m.email}', this.value)"><option value="User" ${m.role==='User'?'selected':''}>User</option><option value="Admin" ${m.role==='Admin'?'selected':''}>Admin</option></select></div>
+      <div class="input-group input-group-sm mt-2"><span class="input-group-text">週目標</span><input type="number" class="form-control" value="${m.target}" id="target-${m.email.replace(/[@.]/g,'')}"><span class="input-group-text">km</span><button class="btn btn-primary" onclick="handleUpdateMemberTarget('${m.email}')">儲存</button></div>
+    </div>`).join('');
 }
-
-async function handleUpdateMemberTarget(email) {
-  const val = document.getElementById('target-'+email.replace(/[@.]/g,'')).value;
-  await api("updateMemberTarget", currentUserEmail, { targetEmail: email, newTarget: val });
-  alert("更新成功");
-  await refreshData();
-}
-
-async function handleRoleChange(email, role) {
-  await api("updateMemberRole", currentUserEmail, { targetEmail: email, newRole: role });
-  alert("權限已更改");
-}
-// --- 【補齊完畢】 ---
 
 function loadHistory() {
   const sorted = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
@@ -718,86 +677,35 @@ function loadHistory() {
     </div>`).join('');
 }
 
-async function submitEntry() {
-  const btn = document.getElementById('saveBtn');
-  if (btn.disabled) return;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中...';
+async function handleDelete(id) { if(!confirm("確定要刪除？")) return; const res = await api("deleteActivity", currentUserEmail, { id }); if(res.success) await refreshData(); }
+async function handleUpdateNickname() { const n = document.getElementById('userNameInput').value; const res = await api("updateNickname", currentUserEmail, { newName: n }); if(res) alert("已更新！"); }
+async function handleUpdatePassword() { const p = document.getElementById('userPwInput').value; const res = await api("updatePassword", currentUserEmail, { newPassword: p }); if(res) alert("密碼已修改！"); }
+async function handleUpdateMemberTarget(email) { const val = document.getElementById('target-'+email.replace(/[@.]/g,'')).value; await api("updateMemberTarget", currentUserEmail, { targetEmail: email, newTarget: val }); alert("更新成功"); await refreshData(); }
+async function handleUpdateGlobal() { const val = document.getElementById('globalTargetInput').value; await api("updateGlobalTarget", currentUserEmail, { newTarget: val }); alert("全隊更新成功"); await refreshData(); }
+async function handleNudge(target) { const msg = window.prompt("想對隊友說什麼？", "該跑步了！"); if (msg) { await api("nudgeMember", currentUserEmail, { target, message: msg }); alert("已提醒"); } }
+async function handleClearInbox() { if(!confirm("清空？")) return; await api("clearInbox", currentUserEmail); document.getElementById('userInbox').innerText="暫無新訊息"; }
 
-  let photoId = "";
-  const fileInput = document.getElementById('photoFile');
-  
-  // 1. 處理照片上傳 (修正版)
-  if (fileInput && fileInput.files.length > 0) {
-    const file = fileInput.files[0];
-    const base64Data = await new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.readAsDataURL(file);
-    });
-    
-    // 呼叫 api 函數傳送照片 (這裡原本寫錯了)
-    const photoRes = await api("uploadPhoto", currentUserEmail, { 
-      base64Data: base64Data, 
-      fileName: file.name 
-    });
-    
-    if (photoRes && photoRes.photoId) {
-      photoId = photoRes.photoId;
-    }
-  }
-
-  // 2. 準備存檔資料
-  const data = {
-    date: document.getElementById('selectedDate').innerText,
-    type: document.getElementById('type').value,
-    dist: document.getElementById('dist').value || 0,
-    dur: document.getElementById('dur').value || 0,
-    feeling: document.querySelector('input[name="feeling"]:checked').value,
-    remarks: document.getElementById('remarks').value,
-    photoId: photoId
-  };
-
-  // 3. 呼叫 api 存入試算表
-  const res = await api("saveActivity", currentUserEmail, data);
-  
-  if (res && res.success) {
-    // 成功後隱藏 Modal
-    const modalEl = document.getElementById('entryModal');
-    bootstrap.Modal.getInstance(modalEl).hide();
-    
-    // 重新整理資料與介面
-    await refreshData(); 
-  } else {
-    alert("儲存失敗，請檢查網路連線");
-  }
-  
-  btn.disabled = false;
-  btn.innerText = "儲存紀錄";
+function checkFirstTimeWeeklyReport() {
+  if (!currentUser.WeeklyReport) return;
+  const now = new Date(), sun = new Date(now.setDate(now.getDate() - now.getDay())), weekKey = "seen_" + sun.toLocaleDateString('en-CA');
+  if (localStorage.getItem(weekKey) !== "true") { document.getElementById('fullScreenReportContent').innerHTML = currentUser.WeeklyReport; new bootstrap.Modal(document.getElementById('weeklyModal')).show(); localStorage.setItem(weekKey, "true"); }
 }
 
-function selectFeeling(val, el) {
-  document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('active'));
-  if(!el) el = Array.from(document.querySelectorAll('.feeling-btn')).find(b => b.innerText.includes(val));
-  if(el) { el.classList.add('active'); el.querySelector('input').checked = true; }
-}
-
-function switchTab(t, el) {
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  if (el) el.classList.add('active');
-  document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + t).classList.add('active');
-  if (t === 'history') loadHistory();
-  if (t === 'calendar' && calendar) { calendar.updateSize(); renderCircles(); }
-}
-
-async function handleNudge(target) {
-  const msg = window.prompt("想對隊友說什麼？", "該跑步了！");
-  if (msg) { await api("nudgeMember", currentUserEmail, { target, message: msg }); alert("已提醒"); }
-}
-
-function logout() { localStorage.removeItem('run_email'); location.reload(); }
+function selectFeeling(val, el) { document.querySelectorAll('.feeling-btn').forEach(b => b.classList.remove('active')); if(!el) el = Array.from(document.querySelectorAll('.feeling-btn')).find(b => b.innerText.includes(val)); if(el) { el.classList.add('active'); el.querySelector('input').checked = true; } }
+function switchTab(t, el) { document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); if (el) el.classList.add('active'); document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if (t === 'history') loadHistory(); if (t === 'calendar' && calendar) { calendar.updateSize(); renderCircles(); } }
 function toggleMode(isReg) { document.getElementById('loginBox').style.display = isReg ? 'none' : 'block'; document.getElementById('regBox').style.display = isReg ? 'block' : 'none'; }
+function logout() { localStorage.removeItem('run_email'); location.reload(); }
+
+document.getElementById('photoFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(evt) { document.getElementById('photoPreview').classList.remove('d-none'); document.getElementById('photoPreview').querySelector('img').src = evt.target.result; };
+    reader.readAsDataURL(file);
+  }
+});
+
+document.getElementById('entryModal').addEventListener('hidden.bs.modal', function () { document.querySelector('.bottom-nav').style.display = 'flex'; });
 </script>
 <!-- 全螢幕週報彈窗 -->
 <div class="modal fade" id="weeklyModal" tabindex="-1" aria-hidden="true">
