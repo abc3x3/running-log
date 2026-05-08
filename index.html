@@ -767,6 +767,45 @@ function loadHistory() {
     </div>`).join('');
 }
 
+function renderHistoryCard(e) {
+  const type = e.extendedProps.type;
+  const photoId = e.extendedProps.photoId;
+  
+  // 決定左側邊條顏色
+  let borderColor = 'success';
+  if (type === 'Rest') borderColor = 'warning';
+  if (type === 'Leave') borderColor = 'primary'; // 請假顯示藍色
+
+  return `
+    <div class="history-card border-start border-5 border-${borderColor}">
+      <div class="history-info">
+        <div class="small text-muted">${e.start}</div>
+        <div class="history-stats">
+          ${type === 'Run' ? '🏃' : type === 'Rest' ? '🤸' : '🧘‍♀️'} 
+          ${e.extendedProps.dist} km / ${e.extendedProps.dur} min
+        </div>
+        <div class="mt-1">
+          ${e.extendedProps.feeling} 
+          <span class="small text-muted">${e.extendedProps.remarks || ''}</span>
+        </div>
+      </div>
+      
+      <div class="d-flex flex-column align-items-end">
+        <!-- 刪除按鈕 -->
+        <div class="history-delete mb-2" onclick="handleDelete('${e.extendedProps.id}')">
+          <i class="fa fa-trash"></i>
+        </div>
+        <!-- 照片預覽 (點擊可看原圖) -->
+        ${photoId ? `
+          <img src="https://drive.google.com/thumbnail?id=${photoId}&sz=w200" 
+               class="history-photo" 
+               onclick="window.open('https://drive.google.com/uc?id=${photoId}', '_blank')">
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
 async function handleDelete(id) { if(!confirm("確定要刪除？")) return; const res = await api("deleteActivity", currentUserEmail, { id }); if(res.success) await refreshData(); }
 async function handleUpdateNickname() { const n = document.getElementById('userNameInput').value; const res = await api("updateNickname", currentUserEmail, { newName: n }); if(res) alert("已更新！"); }
 async function handleUpdatePassword() { const p = document.getElementById('userPwInput').value; const res = await api("updatePassword", currentUserEmail, { newPassword: p }); if(res) alert("密碼已修改！"); }
