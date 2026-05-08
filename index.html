@@ -501,13 +501,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // 向後端確認該 Email 是否合法註冊過
 async function checkAuth(email) {
-  const res = await api("getUserData", email);
-  if (res && res.registered) {
-    // 驗證成功，直接載入 App
-    await loadApp(email, res);
-  } else {
-    // 驗證失敗（可能被刪帳號了），清空本地紀錄並要求手動登入
-    localStorage.removeItem('run_email');
+  try {
+    const res = await api("getUserData", email);
+    if (res && res.registered) {
+      await loadApp(email, res);
+    } else {
+      localStorage.removeItem('run_email');
+      document.getElementById('loginPage').style.display = 'block';
+    }
+  } catch (err) {
+    console.error("驗證失敗:", err);
     document.getElementById('loginPage').style.display = 'block';
   }
 }
@@ -536,29 +539,45 @@ async function loadApp(email, data) {
 }
 
 async function renderUI(data) {
+  if (!data || !data.user) return;
   currentUser = data.user;
+
+  // 1. 切換頁面顯示
   document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
+  const app = document.getElementById('mainApp');
+  app.style.display = 'block';
   
+  // 2. 設定暱稱
   const nameInput = document.getElementById('userNameInput');
   if (nameInput) nameInput.value = currentUser.Name || currentUser.name || "";
   
-  if (document.getElementById('weeklyReportContent')) {
-    document.getElementById('weeklyReportContent').innerHTML = currentUser.WeeklyReport ? `<b>${currentUser.WeeklyReport}</b>` : "本週戰報結算中...";
+  // 3. 週報內容
+  const reportContent = document.getElementById('weeklyReportContent');
+  if (reportContent) {
+    reportContent.innerHTML = currentUser.WeeklyReport ? `<b>${currentUser.WeeklyReport}</b>` : "本週戰報結算中...";
   }
 
+  // 4. 管理員權限
   if (currentUser.Role === 'Admin' || currentUser.role === 'Admin') {
     document.getElementById('adminControls').style.display = 'block';
     await loadAdminData();
   }
 
+  // 5. 初始化月曆與抓取活動
   if (!calendar) initCalendar();
   else { calendar.updateSize(); calendar.refetchEvents(); }
   
+  // 6. 抓取最新數據並刷新 UI
   await refreshData();
+  
+  // 7. 檢查週報與顯示導航欄
   checkFirstTimeWeeklyReport();
+  
+  // 【關鍵：確保導航欄在資料載入後強制顯示】
   const nav = document.querySelector('.bottom-nav');
-  if (nav) nav.style.display = 'flex';
+  if (nav) {
+    nav.style.setProperty('display', 'flex', 'important');
+  }
 }
 
 async function refreshData() {
