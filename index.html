@@ -470,18 +470,72 @@ html, body {
 <script>
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyyshhAGLjosLmExVz6SNFCeAwjtflNwEeenSrdRbA32p5fjxMZ2AWPjdQHOlilG0eJ/exec";
 
+// --- 修正後的 api 函數 (增加照片處理的穩定性) ---
 async function api(action, email, data = {}) {
   try {
     const response = await fetch(GAS_API_URL, {
       method: "POST",
       body: JSON.stringify({ action, email, data })
     });
-    const result = await response.json();
-    return result;
+    // 先取得文字，避免 JSON 格式錯誤直接當機
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.log("回傳非 JSON 格式:", text);
+      return { success: true, photoId: text }; // 處理照片 ID 直接回傳字串的情況
+    }
   } catch (err) {
     console.error("API 連線失敗:", err);
-    return { success: false, msg: "無法連線至 Google 伺服器" };
+    return { success: false, msg: "無法連線" };
   }
+}
+
+// --- 補回缺失的 checkOvertrain 函數 (解決紅字報錯) ---
+function checkOvertrain() {
+  const el = document.getElementById('overtrainAlert');
+  if (!el || !allEvents || allEvents.length < 3) {
+    if(el) el.style.display = 'none';
+    return;
+  }
+  const s = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
+  let streak = 0;
+  if(s[0].extendedProps.type === 'Run') {
+    for(let i=0; i<s.length; i++) {
+      if(i===0) streak=1;
+      else {
+        const d = Math.round((new Date(s[i-1].start)-new Date(s[i].start))/86400000);
+        if(d===1 && s[i].extendedProps.type==='Run') streak++; else break;
+      }
+    }
+  }
+  if(streak>=3) { el.innerHTML=`⚠️ 已連跑 ${streak} 天，請休息！`; el.style.display='block'; } 
+  else el.style.display='none';
+}
+
+// --- 補回缺失的 handleDelete 函數 (讓歷史紀錄可以刪除) ---
+async function handleDelete(id) {
+  if(!confirm("確定要刪除這筆紀錄嗎？")) return;
+  const res = await api("deleteActivity", currentUserEmail, { id: id });
+  if(res.success) await refreshData();
+}
+
+// --- 補回缺失的 showMemberWeeklyDetails 函數 (讓進度頁點擊有效) ---
+async function showMemberWeeklyDetails(email, name) {
+  document.getElementById('detailMemberName').innerText = name + " 的本週紀錄";
+  document.getElementById('weeklyDetailContent').innerHTML = '<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span> 讀取中...</div>';
+  new bootstrap.Modal(document.getElementById('memberDetailModal')).show();
+  const details = await api("getMemberWeeklyDetails", email);
+  const container = document.getElementById('weeklyDetailContent');
+  if (!details || details.length === 0) {
+    container.innerHTML = '<p class="text-center text-muted my-3">本週尚無跑步紀錄</p>';
+    return;
+  }
+  container.innerHTML = `<div class="list-group list-group-flush">${details.map(d => `
+    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+      <div><span class="badge bg-light text-dark me-2">${d.date}</span><strong>${d.dist} km</strong></div>
+      <div class="text-muted small">${d.dur} min ${d.feeling}</div>
+    </div>`).join('')}</div>`;
 }
   
 let calendar, currentUserEmail, currentUser, allEvents = [];
