@@ -365,8 +365,7 @@ html, body {
         <button class="btn btn-outline-secondary" onclick="handleUpdatePassword()">更新</button>
       </div>
     </div>
-  </div>
-
+    
   <!-- 3. 隊長專區 (僅管理員) -->
   <div id="adminControls" style="display:none">
     <div class="card p-3 mb-3 shadow-sm border-0" style="border-radius:15px; background: #f1f3f5;">
@@ -385,14 +384,6 @@ html, body {
   </div>
 
   <button class="btn btn-outline-danger w-100 mt-2 mb-4" onclick="logout()">登出帳號</button>
-
-    <!-- 底部導航欄 -->
-  <div class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
-    <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
-    <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa fa-fire"></i><span>進度</span></div>
-    <div class="nav-item" onclick="switchTab('admin', this)"><i class="fa fa-user-circle"></i><span>我的</span></div>
-  </div>
 </div>
 
 <!-- 跑步輸入 Modal -->
@@ -462,6 +453,13 @@ html, body {
         </div>
       </div>
     </div>
+  </div>
+  <!-- 底部導航欄 -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
+    <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
+    <div class="nav-item" onclick="switchTab('leaderboard', this)"><i class="fa fa-fire"></i><span>進度</span></div>
+    <div class="nav-item" onclick="switchTab('admin', this)"><i class="fa fa-user-circle"></i><span>我的</span></div>
   </div>
 </div>
 
