@@ -590,15 +590,20 @@ async function renderUI(data) {
 
 async function refreshData() {
   const evts = await api("getActivities", currentUserEmail);
-  allEvents = evts;
-  if (calendar) {
-    calendar.removeAllEvents();
-    calendar.addEventSource(allEvents);
+  if (evts) {
+    allEvents = evts;
+    
+    // 確保月曆更新紀錄
+    if (calendar) {
+      calendar.removeAllEvents();
+      calendar.addEventSource(allEvents);
+    }
+    
+    renderCircles();          // 重新畫圓圈
+    updateRemainingDistance(); // 重新算剩餘里程
+    loadLeaderboard();        // 刷新排行榜
+    checkOvertrain();         // 檢查連跑
   }
-  renderCircles();
-  updateRemainingDistance();
-  loadLeaderboard();
-  checkOvertrain();
 }
 
 function initCalendar() {
@@ -722,7 +727,7 @@ async function submitEntry() {
   let photoId = "";
   const fileInput = document.getElementById('photoFile');
   
-  // 1. 處理照片上傳 (改為 GitHub 專用 fetch)
+  // 1. 處理照片上傳 (修正版)
   if (fileInput && fileInput.files.length > 0) {
     const file = fileInput.files[0];
     const base64Data = await new Promise(resolve => {
@@ -731,12 +736,13 @@ async function submitEntry() {
       reader.readAsDataURL(file);
     });
     
-    // 呼叫 api 函數傳送照片
+    // 呼叫 api 函數傳送照片 (這裡原本寫錯了)
     const photoRes = await api("uploadPhoto", currentUserEmail, { 
       base64Data: base64Data, 
       fileName: file.name 
     });
-     if (photoRes && photoRes.photoId) {
+    
+    if (photoRes && photoRes.photoId) {
       photoId = photoRes.photoId;
     }
   }
@@ -755,10 +761,15 @@ async function submitEntry() {
   // 3. 呼叫 api 存入試算表
   const res = await api("saveActivity", currentUserEmail, data);
   
-  if (res.success) {
-    bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide();
-    // 重新刷一次資料，確保畫面更新
+  if (res && res.success) {
+    // 成功後隱藏 Modal
+    const modalEl = document.getElementById('entryModal');
+    bootstrap.Modal.getInstance(modalEl).hide();
+    
+    // 重新整理資料與介面
     await refreshData(); 
+  } else {
+    alert("儲存失敗，請檢查網路連線");
   }
   
   btn.disabled = false;
