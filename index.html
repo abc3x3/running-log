@@ -768,38 +768,42 @@ function loadHistory() {
 }
 
 function renderHistoryCard(e) {
-  const type = e.extendedProps.type;
-  const photoId = e.extendedProps.photoId;
+  const p = e.extendedProps; // 取得所有欄位資料
+  const type = p.type;
   
-  // 決定左側邊條顏色
+  // 邊條顏色邏輯
   let borderColor = 'success';
   if (type === 'Rest') borderColor = 'warning';
-  if (type === 'Leave') borderColor = 'primary'; // 請假顯示藍色
+  if (type === 'Leave') borderColor = 'primary';
 
   return `
-    <div class="history-card border-start border-5 border-${borderColor}">
+    <div class="history-card border-start border-5 border-${borderColor} bg-white shadow-sm">
+      <!-- 左側：文字與數據區 -->
       <div class="history-info">
         <div class="small text-muted">${e.start}</div>
         <div class="history-stats">
           ${type === 'Run' ? '🏃' : type === 'Rest' ? '🤸' : '🧘‍♀️'} 
-          ${e.extendedProps.dist} km / ${e.extendedProps.dur} min
+          ${p.dist} km / ${p.dur} min
         </div>
-        <div class="mt-1">
-          ${e.extendedProps.feeling} 
-          <span class="small text-muted">${e.extendedProps.remarks || ''}</span>
+        
+        <!-- 【補回：備註與表情區】 -->
+        <div class="history-remarks">
+          ${p.feeling} <span>${p.remarks || ''}</span>
         </div>
       </div>
       
-      <div class="d-flex flex-column align-items-end">
-        <!-- 刪除按鈕 -->
-        <div class="history-delete mb-2" onclick="handleDelete('${e.extendedProps.id}')">
+      <!-- 右側：刪除按鈕與照片區 -->
+      <div class="d-flex flex-column align-items-end" style="min-width: 70px;">
+        <div class="history-delete mb-2" onclick="handleDelete('${p.id}')">
           <i class="fa fa-trash"></i>
         </div>
-        <!-- 照片預覽 (點擊可看原圖) -->
-        ${photoId ? `
-          <img src="https://drive.google.com/thumbnail?id=${photoId}&sz=w200" 
+        
+        <!-- 【補回：照片縮圖】只有當 photoId 存在時才顯示 -->
+        ${p.photoId ? `
+          <img src="https://drive.google.com/thumbnail?id=${p.photoId}&sz=w200" 
                class="history-photo" 
-               onclick="window.open('https://drive.google.com/uc?id=${photoId}', '_blank')">
+               title="點擊查看大圖"
+               onclick="window.open('https://drive.google.com/uc?id=${p.photoId}', '_blank')">
         ` : ''}
       </div>
     </div>
