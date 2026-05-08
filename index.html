@@ -434,8 +434,7 @@ html, body {
     <div id="photoPreview" class="mt-2 d-none"><img src="" class="img-thumbnail" style="max-height: 150px;"></div>
   </div>
   
-  <button id="saveBtn" class="btn btn-primary w-100" onclick="submitEntry()">儲存紀錄</button>
-</div>
+  <button id="saveBtn" class="btn btn-primary w-100" onclick="submitEntry()">儲存紀錄</button></div>
     </div>
   </div>
 </div>
@@ -456,7 +455,7 @@ html, body {
       </div>
     </div>
   </div>
-   <!-- 底部導航欄 -->
+  <!-- 底部導航欄 -->
   <div class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('calendar', this)"><i class="fa fa-calendar-alt"></i><span>月曆</span></div>
     <div class="nav-item" onclick="switchTab('history', this)"><i class="fa fa-history"></i><span>紀錄</span></div>
@@ -666,15 +665,53 @@ function loadHistory() {
 }
 
 async function submitEntry() {
-  const btn = document.getElementById('saveBtn'); btn.disabled = true;
+  const btn = document.getElementById('saveBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 處理中...';
+
+  let photoId = "";
+  const fileInput = document.getElementById('photoFile');
+  
+  // 1. 處理照片上傳 (改為 GitHub 專用 fetch)
+  if (fileInput && fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const base64Data = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+    
+    // 呼叫 api 函數傳送照片
+    const photoRes = await api("uploadPhoto", currentUserEmail, { 
+      base64Data: base64Data, 
+      fileName: file.name 
+    });
+    photoId = photoRes.photoId;
+  }
+
+  // 2. 準備存檔資料
   const data = {
-    date: document.getElementById('selectedDate').innerText, type: document.getElementById('type').value,
-    dist: document.getElementById('dist').value || 0, dur: document.getElementById('dur').value || 0,
-    feeling: document.querySelector('input[name="feeling"]:checked').value, remarks: document.getElementById('remarks').value
+    date: document.getElementById('selectedDate').innerText,
+    type: document.getElementById('type').value,
+    dist: document.getElementById('dist').value || 0,
+    dur: document.getElementById('dur').value || 0,
+    feeling: document.querySelector('input[name="feeling"]:checked').value,
+    remarks: document.getElementById('remarks').value,
+    photoId: photoId
   };
+
+  // 3. 呼叫 api 存入試算表
   const res = await api("saveActivity", currentUserEmail, data);
-  if(res.success) { bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide(); await refreshData(); }
+  
+  if (res.success) {
+    bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide();
+    // 重新刷一次資料，確保畫面更新
+    await refreshData(); 
+  }
+  
   btn.disabled = false;
+  btn.innerText = "儲存紀錄";
 }
 
 function selectFeeling(val, el) {
