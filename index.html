@@ -183,20 +183,7 @@ html, body {
   .feeling-btn.active small { color: white; }
 
   /* 懸浮導航欄 */
-  .bottom-nav {
-  position: fixed;
-  bottom: 15px;
-  left: 15px;
-  right: 15px;
-  height: 70px;
-  background: white;
-  border-radius: 35px;
-  display: flex !important; /* 確保它是彈性佈局 */
-  justify-content: space-evenly;
-  align-items: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  z-index: 2000; /* 確保它層級夠高 */
-}
+  .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; height: 70px; background: white; border-radius: 35px; display: flex; justify-content: space-evenly; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 2000; }
   .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; color: #b2bec3; cursor: pointer; border: none; background: none; }
   .nav-item i { font-size: 1.2rem; margin-bottom: 4px; }
   .nav-item span { font-size: 0.7rem; font-weight: bold; }
@@ -660,6 +647,49 @@ async function submitEntry() {
   btn.disabled = false; btn.innerText = "儲存紀錄";
 }
 
+function renderHistoryCard(e) {
+  const p = e.extendedProps; // 取得所有欄位資料
+  const type = p.type;
+  
+  // 邊條顏色邏輯
+  let borderColor = 'success';
+  if (type === 'Rest') borderColor = 'warning';
+  if (type === 'Leave') borderColor = 'primary';
+
+  return `
+    <div class="history-card border-start border-5 border-${borderColor} bg-white shadow-sm">
+      <!-- 左側：文字與數據區 -->
+      <div class="history-info">
+        <div class="small text-muted">${e.start}</div>
+        <div class="history-stats">
+          ${type === 'Run' ? '🏃' : type === 'Rest' ? '🤸' : '🧘‍♀️'} 
+          ${p.dist} km / ${p.dur} min
+        </div>
+        
+        <!-- 【補回：備註與表情區】 -->
+        <div class="history-remarks">
+          ${p.feeling} <span>${p.remarks || ''}</span>
+        </div>
+      </div>
+      
+      <!-- 右側：刪除按鈕與照片區 -->
+      <div class="d-flex flex-column align-items-end" style="min-width: 70px;">
+        <div class="history-delete mb-2" onclick="handleDelete('${p.id}')">
+          <i class="fa fa-trash"></i>
+        </div>
+        
+        <!-- 【補回：照片縮圖】只有當 photoId 存在時才顯示 -->
+        ${p.photoId ? `
+          <img src="https://drive.google.com/thumbnail?id=${p.photoId}&sz=w200" 
+               class="history-photo" 
+               title="點擊查看大圖"
+               onclick="window.open('https://drive.google.com/uc?id=${p.photoId}', '_blank')">
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+  
 function renderCircles() {
   document.querySelectorAll('.circle-bg').forEach(el => el.remove());
   allEvents.forEach(evt => {
