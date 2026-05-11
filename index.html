@@ -556,10 +556,16 @@ async function renderUI(data) {
   if (nameInput) nameInput.value = currentUser.Name || currentUser.name || "";
   
   // 3. 週報內容
-  const reportContent = document.getElementById('weeklyReportContent');
-  if (reportContent) {
-    reportContent.innerHTML = currentUser.WeeklyReport ? `<b>${currentUser.WeeklyReport}</b>` : "本週戰報結算中...";
+  const reportEl = document.getElementById('weeklyReportContent');
+  if (reportEl) {
+    const reportText = currentUser.WeeklyReport || currentUser.weeklyreport || "";
+    if (reportText) {
+      reportEl.innerHTML = `<b>${reportText}</b>`;
+    } else {
+      reportEl.innerText = "新一週開始了，加油！結算將於週日深夜產生。";
+    }
   }
+
 
   // 4. 管理員權限
   if (currentUser.Role === 'Admin' || currentUser.role === 'Admin') {
@@ -597,6 +603,9 @@ async function renderUI(data) {
       inboxEl.innerHTML = "暫無新訊息";
     }
   }
+   if (!calendar) initCalendar();
+  else { calendar.updateSize(); calendar.refetchEvents(); }
+  await refreshData();
 }
 
 async function refreshData() {
