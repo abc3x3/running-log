@@ -582,6 +582,21 @@ async function renderUI(data) {
   if (nav) {
     nav.style.setProperty('display', 'flex', 'important');
   }
+
+  // 更新收件箱
+  const inboxEl = document.getElementById('userInbox');
+  if (inboxEl) {
+    // 檢查 Nudge 欄位 (注意：屬性名稱必須與後端對應)
+    const nudgeData = data.user.Nudge || data.user.nudge || "";
+    
+    if (nudgeData) {
+      const msgList = nudgeData.split('\n');
+      inboxEl.innerHTML = msgList.map(msg => `<div class="mb-2 pb-2 border-bottom border-warning border-opacity-25">${msg}</div>`).join('') + 
+        `<div class="text-end mt-2"><button class="btn btn-sm btn-outline-danger" onclick="handleClearInbox()" style="font-size: 0.65rem;">清除信箱</button></div>`;
+    } else {
+      inboxEl.innerHTML = "暫無新訊息";
+    }
+  }
 }
 
 async function refreshData() {
@@ -793,24 +808,26 @@ async function showMemberWeeklyDetails(email, name) {
 
 // 喚醒隊友邏輯
 async function handleNudge(targetEmail) {
-  // 強制轉小寫去空白後比對，防止 self-nudge
-  const me = currentUserEmail.trim().toLowerCase();
-  const them = targetEmail.trim().toLowerCase();
+  // 1. 強制轉小寫且去空白進行比對
+  const myEmail = currentUserEmail.trim().toLowerCase();
+  const theirEmail = targetEmail.trim().toLowerCase();
 
-  if (them === me) {
-    alert("不能喚醒自己喔！趕快穿上鞋子出發吧！");
+  // 2. 嚴格檢查
+  if (theirEmail === myEmail) {
+    alert("❌ 不能喚醒自己喔！趕快出發跑步吧！");
     return;
   }
   
   const msg = window.prompt("想對隊友說什麼？", "該跑步了！");
-  if (!msg) return; // 使用者按取消或沒輸入就跳出
+  if (msg === null || msg.trim() === "") return; 
 
+  // 3. 送出 API 請求
   const res = await api("nudgeMember", currentUserEmail, { 
-    target: them, 
+    target: theirEmail, 
     message: msg 
   });
   
-  if (res.success) alert("提醒已發送！");
+  if (res.success) alert("✅ 提醒已發送！");
 }
 
 async function loadAdminData() {
