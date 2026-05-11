@@ -942,6 +942,34 @@ function renderHistoryCard(e) {
   `;
 }
 
+// 修改隊員權限 (User <-> Admin)
+async function handleRoleChange(targetEmail, newRole) {
+  // 防呆：不能改自己的權限，否則會把自己鎖在外面
+  if (targetEmail === currentUserEmail) {
+    alert("不能修改自己的權限喔！");
+    await loadAdminData(); // 刷回原本的狀態
+    return;
+  }
+
+  if (!confirm(`確定要將該成員權限改為 ${newRole} 嗎？`)) {
+    await loadAdminData(); // 使用者按取消，刷回原本狀態
+    return;
+  }
+
+  // 呼叫 API 進行更新
+  const res = await api("updateMemberRole", currentUserEmail, { 
+    targetEmail: targetEmail, 
+    newRole: newRole 
+  });
+
+  if (res && res.success) {
+    alert("權限更新成功！");
+  } else {
+    alert("更新失敗，可能權限不足");
+    await loadAdminData();
+  }
+}
+
 function renderHistoryCard(e) {
   const p = e.extendedProps; // 取得所有欄位資料
   const type = p.type;
