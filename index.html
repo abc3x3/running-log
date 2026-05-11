@@ -773,38 +773,43 @@ async function showMemberWeeklyDetails(email, name) {
   
   new bootstrap.Modal(document.getElementById('memberDetailModal')).show();
 
-  const details = await api("getMemberWeeklyDetails", "", { targetEmail: email });
-  const container = document.getElementById('weeklyDetailContent');
+  // 關鍵：將 email 放進 data 物件中的 targetEmail 欄位
+  const res = await api("getMemberWeeklyDetails", currentUserEmail, { 
+    targetEmail: email 
+  });
   
-  if (!details || details.length === 0) {
+  const container = document.getElementById('weeklyDetailContent');
+  if (!res || res.length === 0) {
     container.innerHTML = '<p class="text-center text-muted my-3">本週尚無跑步紀錄</p>';
     return;
   }
 
-  container.innerHTML = `
-    <div class="list-group list-group-flush">
-      ${details.map(d => `
-        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-          <div>
-            <span class="badge bg-light text-dark me-2">${d.date}</span>
-            <strong>${d.dist} km</strong>
-          </div>
-          <div class="text-muted small">${d.dur} min ${d.feeling}</div>
-        </div>
-      `).join('')}
-    </div>
-    <div class="mt-3 text-center small text-muted">僅顯示本週日以後的紀錄</div>
-  `;
+  container.innerHTML = `<div class="list-group list-group-flush">${res.map(d => `
+    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+      <div><span class="badge bg-light text-dark me-2">${d.date}</span><strong>${d.dist} km</strong></div>
+      <div class="text-muted small">${d.dur} min ${d.feeling}</div>
+    </div>`).join('')}</div>`;
 }
 
 // 喚醒隊友邏輯
 async function handleNudge(targetEmail) {
-  if (targetEmail === currentUserEmail) return alert("不能喚醒自己喔！");
+  // 強制轉小寫去空白後比對，防止 self-nudge
+  const me = currentUserEmail.trim().toLowerCase();
+  const them = targetEmail.trim().toLowerCase();
+
+  if (them === me) {
+    alert("不能喚醒自己喔！趕快穿上鞋子出發吧！");
+    return;
+  }
   
   const msg = window.prompt("想對隊友說什麼？", "該跑步了！");
-  if (msg === null) return; // 按取消
+  if (!msg) return; // 使用者按取消或沒輸入就跳出
 
-  const res = await api("nudgeMember", currentUserEmail, { target: targetEmail, message: msg });
+  const res = await api("nudgeMember", currentUserEmail, { 
+    target: them, 
+    message: msg 
+  });
+  
   if (res.success) alert("提醒已發送！");
 }
 
