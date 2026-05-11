@@ -785,16 +785,73 @@ function uploadPhoto(base64Data, fileName) {
 }
   
 function loadHistory() {
-  const sorted = [...allEvents].sort((a,b) => new Date(b.start) - new Date(a.start));
+  const container = document.getElementById('historyList');
+  if (!allEvents || allEvents.length === 0) {
+    container.innerHTML = '<p class="text-center mt-5">目前尚無紀錄</p>';
+    return;
+  }
+
+  // 除錯用：在瀏覽器 F12 檢查這行，看有沒有看到 remarks 和 photoId
+  console.log("當前所有活動資料:", allEvents);
+
+  const sorted = [...allEvents].sort((a, b) => new Date(b.start) - new Date(a.start));
   const groups = {};
-  sorted.forEach(e => { const month = e.start.substring(0, 7); if(!groups[month]) groups[month] = []; groups[month].push(e); });
-  document.getElementById('historyList').innerHTML = Object.keys(groups).map((month, idx) => `
-    <div class="month-group">
-      <div class="month-header" data-bs-toggle="collapse" data-bs-target="#m${idx}"><span>${month}</span><i class="fa fa-chevron-down"></i></div>
-      <div id="m${idx}" class="collapse ${idx===0?'show':''} bg-white">
-        ${groups[month].map(e => `<div class="history-card border-start border-5 border-${e.extendedProps.type==='Run'?'success':'warning'}"><div><div class="small text-muted">${e.start}</div><div>🏃 ${e.extendedProps.dist} km / ${e.extendedProps.dur} min</div></div><div class="history-delete" onclick="handleDelete('${e.extendedProps.id}')"><i class="fa fa-trash"></i></div></div>`).join('')}
+  sorted.forEach(e => {
+    const month = e.start.substring(0, 7);
+    if (!groups[month]) groups[month] = [];
+    groups[month].push(e);
+  });
+
+  let html = '';
+  Object.keys(groups).forEach((month, idx) => {
+    const mid = `m${idx}`;
+    html += `
+      <div class="month-group">
+        <div class="month-header" data-bs-toggle="collapse" data-bs-target="#${mid}">
+          <span><i class="fa fa-calendar-day me-2 text-primary"></i>${month}</span>
+          <i class="fa fa-chevron-down"></i>
+        </div>
+        <div id="${mid}" class="collapse ${idx === 0 ? 'show' : ''} bg-white">
+          <div class="py-2">
+            ${groups[month].map(e => renderHistoryCard(e)).join('')}
+          </div>
+        </div>
       </div>
-    </div>`).join('');
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function renderHistoryCard(e) {
+  const p = e.extendedProps;
+  const bcolor = p.type === 'Run' ? 'success' : p.type === 'Rest' ? 'warning' : 'primary';
+
+  return `
+    <div class="history-card border-start border-5 border-${bcolor} bg-white shadow-sm">
+      <div class="history-info">
+        <div class="small text-muted">${e.start}</div>
+        <div class="history-stats">
+          ${p.type === 'Run' ? '🏃' : p.type === 'Rest' ? '🤸' : '🧘‍♀️'} 
+          ${p.dist} km / ${p.dur} min
+        </div>
+        <!-- 備註顯示區 -->
+        <div class="mt-1" style="font-size: 0.85rem;">
+          ${p.feeling || ''} <span class="text-dark">${p.remarks || ''}</span>
+        </div>
+      </div>
+      <div class="d-flex flex-column align-items-end" style="min-width: 75px;">
+        <div class="history-delete mb-2" onclick="handleDelete('${p.id}')">
+          <i class="fa fa-trash"></i>
+        </div>
+        <!-- 縮圖顯示區 -->
+        ${p.photoId ? `
+          <img src="https://drive.google.com/thumbnail?id=${p.photoId}&sz=w200" 
+               class="history-photo" 
+               onclick="window.open('https://drive.google.com/uc?id=${p.photoId}', '_blank')">
+        ` : ''}
+      </div>
+    </div>
+  `;
 }
 
 function renderHistoryCard(e) {
